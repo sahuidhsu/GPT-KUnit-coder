@@ -36,11 +36,14 @@ else:
     thread_id = config["THREAD_ID"]
     thread = openai.beta.threads.retrieve(thread_id=thread_id)
 
-if not os.path.exists(linux_path) or not config["LINUX_PATH"]:
+if not config["LINUX_PATH"]:
     print("ERROR! Please set your LINUX_PATH in config.toml")
     exit()
 linux_path = os.path.abspath(config["LINUX_PATH"])
-file_path = input("Please enter the path of the file you want to test(from root of linux kernel): ")
+if not os.path.exists(linux_path) or not os.path.isdir(linux_path):
+    print("ERROR! LINUX_PATH not found or not a directory!")
+    exit()
+file_path = input("Please enter the path of the file you want to test(relative path from root of Linux kernel): ")
 file_path = linux_path + file_path
 if not os.path.exists(file_path):
     print("ERROR! File not found!")

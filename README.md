@@ -8,17 +8,25 @@ create KUnit codes for Linux kernel files.
 > Also, the API is not free, you will need to have an OpenAI account and have access to the API.
 
 ## How to use
+### Requirements
+- Python 3.6 or higher
+- Pip installed
+- OpenAI account with access to the Assistant API
+- A valid API key
 ### Installation
 First, you will need to install dependencies:
 ```bash
-pip install -r requirements.txt
+pip install -r requirements.txt # if you are using Windows
+pip3 install -r requirements.txt # if you are using Linux/MacOS
 ```
-Then, you will need to change the default configuration in [config.toml](config.toml) to your own.
+Then, you will need to change the default configuration in [config.toml](config.toml) to your own. \
+It's okay to leave `ASSISTANT_ID` and `THREAD_ID` blank, but you will need to fill in `OPENAI_API_KEY` and `LINUX_PATH`.
 
 ### Run
 To run the script, you will need to run the following command:
 ```bash
-python main.py
+python main.py  # if you are using Windows
+python3 main.py # if you are using Linux/MacOS
 ```
 The script will ask you for the path of the file you want to generate the KUnit code for.
 
