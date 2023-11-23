@@ -4,7 +4,8 @@
 This is a simple Python script that utilize the beta Assistant API from openAI to automatically
 create KUnit codes for Linux kernel files.
 > [!IMPORTANT]
-> Currently(23/11/2023) ***Assistant API*** is in a beta version, so it can be unstable and not work properly.
+> **This script is under development right now, so do not expect it to work properly yet.** \
+> Currently(23/11/2023) ***Assistant API*** is in a beta version, so it can be unstable and not work properly. \
 > Also, the API is not free, you will need to have an OpenAI account and have access to the API.
 
 ## How to use
