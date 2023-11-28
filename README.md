@@ -1,5 +1,5 @@
 # GPT-KUnit-coder
-[![OpenAI](https://img.shields.io/badge/OpenAI-API-08FF00?style=for-the-badge&logo=openai)](https://beta.openai.com/docs/api-reference/introduction)
+[![OpenAI](https://img.shields.io/badge/OpenAI-API-00A000?style=for-the-badge&logo=openai)](https://beta.openai.com/docs/api-reference/introduction)
 ## Introduction
 This is a simple Python script that utilize the beta Assistant API from openAI to automatically
 create KUnit codes for Linux kernel files.
@@ -17,18 +17,33 @@ create KUnit codes for Linux kernel files.
 ### Installation
 First, you will need to install dependencies:
 ```bash
-pip install -r requirements.txt # if you are using Windows
-pip3 install -r requirements.txt # if you are using Linux/MacOS
+pip3 install -r requirements.txt
 ```
 Then, you will need to change the default configuration in [config.toml](config.toml) to your own. \
 It's okay to leave `ASSISTANT_ID` and `THREAD_ID` blank, but you will need to fill in `OPENAI_API_KEY` and `LINUX_PATH`.
 
 ### Run
-To run the script, you will need to run the following command:
+#### Test generating mode
+To generate tests, you will need to run the following command:
 ```bash
-python main.py  # if you are using Windows
-python3 main.py # if you are using Linux/MacOS
+python3 main.py # use python if you are using Windows
 ```
 The script will ask you for the path of the file you want to generate the KUnit code for.
+#### Code fixing mode
+To fix the code, you will need to include a text file with errors generated when running the tests:
+```bash
+python3 main.py <file> # use python if you are using Windows
+```
+The script will send the errors to GPT and return back the fixed code. \
+This step can be run multiple times to fix the code even more.
+#### Display messages
+To display messages, you will need to run the following command:
+```bash
+python3 display_messages.py # use python if you are using Windows
+```
+This script will display all the messages from the conversation with GPT. \
+Please be aware that you will have to configure the threads correctly. \
+This script will display the messages on the screen as well as generating a text file `message_log.txt` with the messages.
 
-...
+### License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
