@@ -38,7 +38,7 @@ def send_message(msg_client, msg_thread, msg_assistant, msg):
             run_id=run.id
         )
         time.sleep(3)
-        if time.time() - time_start > 60:
+        if time.time() - time_start > 180:
             print("ERROR! Timeout waiting for responses!")
             return None
     print("Message received!")
@@ -87,26 +87,34 @@ def initialise():
         assistant = client.beta.assistants.retrieve(assistant_id=assistant_id)
 
 
-def error_fixing_mode():
+def error_fixing_mode(text=None):
     print("Entering error fixing mode...")
     if not config["THREAD_ID"]:
         print("ERROR! You should have an existing thread to send errors!")
         exit(1)
     thread_id = config["THREAD_ID"]
     thread = client.beta.threads.retrieve(thread_id=thread_id)
-    error_file = input("Please enter the path of the file containing the errors: ")
-    error_file = os.path.abspath(error_file)
-    print("Full file path: " + error_file)
-    if not os.path.exists(error_file) or not os.path.isfile(error_file):
-        print("ERROR! File not found!")
-        exit(1)
-    with open(error_file) as file:
-        errors = file.read()
+    if text is None:
+        error_file = input("Please enter the path of the file containing the errors: ")
+        error_file = os.path.abspath(error_file)
+        print("Full file path: " + error_file)
+        if not os.path.exists(error_file) or not os.path.isfile(error_file):
+            print("ERROR! File not found!")
+            exit(1)
+        with open(error_file) as file:
+            errors = file.read()
+    else:
+        errors = text
     received_content = send_message(client, thread, assistant, errors)
+    if not received_content:
+        exit(1)
+    result_code = ""
     print("---------Generated Code-------------")
     for this_content in received_content:
-        print(this_content[4:-4].strip())
+        result_code = this_content[4:-4].strip()
+        print(result_code)
         print("-------------------------------------")
+    return result_code
 
 
 def test_generating_mode():
@@ -150,8 +158,11 @@ def test_generating_mode():
         code = file.readlines()
     start_line = int(input("Please enter the start line of the code: "))
     end_line = int(input("Please enter the end line of the code: "))
+    print("-------------------------------------")
     code = "".join(code[start_line - 1:end_line])
     received_content = send_message(client, thread, assistant, code)
+    if not received_content:
+        exit(1)
     code_found = False
     return_code = ""
     print("---------Generated Code-------------")
@@ -169,9 +180,10 @@ def test_generating_mode():
                 print("-------------------------------------")
                 continue
             else:
-                return_code = this_content[start_pos + 4:end_pos].strip()
+                return_code = (this_content[start_pos + 4:end_pos]
+                               .strip().replace("<linux/kunit/test.h>", "<kunit/test.h>"))
                 code_found = True
-        print(return_code)
+        # print(return_code)
         print("-------------------------------------")
     if not code_found:
         print("ERROR! No code found in the responses!")
@@ -187,7 +199,7 @@ def test_generating_mode():
         print("Test file already exists in Makefile!")
     else:
         print("Adding test file to Makefile...")
-        makefile.append("\nobj-$(CONFIG_TMP_KUNIT_TEST) += tmp_kunit_test.o")
+        makefile.append("\nobj-$(CONFIG_TMP_KUNIT_TEST) += tmp_kunit_test.o\n")
         with open(linux_path + "/drivers/misc/Makefile", "w") as file:
             file.writelines(makefile)
     with open(linux_path + "/drivers/misc/Kconfig") as file:
@@ -214,21 +226,53 @@ def test_generating_mode():
     print("-------------------------------------")
     print("Now compiling and running tests...")
     print("-------------------------------------")
-    result = subprocess.call(["cd " + linux_path + " && ./tools/testing/kunit/kunit.py run"], shell=True)
+    result = subprocess.run(["cd " + linux_path + " && ./tools/testing/kunit/kunit.py run"],
+                                     shell=False, capture_output=True)
+    result = str(result)
     print(result)
+    start_pos = result.find("ERROR")
+    if start_pos != -1 and result.find("unsatisfied dependencies") != -1:
+        print("-------------------------------------")
+        print("ERROR! Unsatisfied dependencies! Please check dependencies yourself!")
+        print("The test file is located at: " + test_file)
+        print("-------------------------------------")
+        exit(1)
+    while start_pos != -1:
+        print("There's error, do you want to send errors to assistant? (Y/n) ")
+        entry = input()
+        if entry.lower() not in ["n", "no", "dont", "not"]:
+            error = result[start_pos:]
+            result_code = error_fixing_mode(text=error)
+            if result_code != "":
+                print("Now running fixed code...")
+                print("-------------------------------------")
+                with open(test_file, "w") as file:
+                    file.write(result_code)
+                result = subprocess.check_output(["cd " + linux_path + " && ./tools/testing/kunit/kunit.py run"],
+                                                 shell=False).decode()
+                result = str(result)
+                print(result)
+                start_pos = result.find("ERROR")
+            else:
+                exit(1)
+        else:
+            break
+    print("-------------------------------------")
+    print("All tests passed! Congratulations!")
+    print("The test file is located at: " + test_file)
     print("-------------------------------------")
 
 
 if __name__ == "__main__":
     print("-------------------------------------")
-    print("KUnit Test Generator")
+    print("GPT KUnit Test Generator")
     print("Author: LTY_CK_TS")
     print("Version: 0.1.0")
     print("-------------------------------------")
     initialise()
     end = False
     while not end:
-        print("Please select mode:")
+        print("Please select mode(error fixing is also included in test generating mode):")
         print("1. Test generating mode")
         print("2. Error fixing mode")
         print("0. Exit")
