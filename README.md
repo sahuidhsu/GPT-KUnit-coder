@@ -38,11 +38,14 @@ Then you will see a menu containing some options:
 #### Test generating mode
 This function script will ask you for the path of the file you want to generate the KUnit code for. \
 Then it will compile the file and run the tests. \
-After that, if errors occurred, you can then send the errors to GPT and return back the fixed code. \
+After that, if errors occurred, you can then send the errors to GPT and return back the fixed code.
 #### Code fixing mode
 **This function is also included in the test generating mode. If you run it individually,
 you will need to enter a path to a text file that contains errors.** \
-This function will send the errors to GPT and return back the fixed code. \
+This function will send the errors to GPT and return back the fixed code.
+#### Clean up mode
+This function will remove the test file from Makefile, Kconfig and .kunitconfig, but not the test file itself. \
+There's a double check confirmation to make sure you want to remove the test file.
 #### Display messages
 To display messages, you will need to run the following command:
 ```bash

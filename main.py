@@ -10,7 +10,7 @@ import time
 import openai
 import toml
 
-global end, config, client, assistant
+global end, config, client, assistant, linux_path
 
 
 def send_message(msg_client, msg_thread, msg_assistant, msg):
@@ -52,10 +52,64 @@ def send_message(msg_client, msg_thread, msg_assistant, msg):
     return contents
 
 
+def cleanup():
+    print("You have entered clean up function.")
+    print("This function will remove the test file from Makefile, Kconfig and .kunitconfig,"
+          " but not the test file itself.")
+    print("Do you want to continue? (y/N)")
+    entry = input()
+    if entry.lower() not in ["y", "yes", "yep", "yeah", "sure", "ok", "okay", "fine", "alright", "affirmative"]:
+        print("Exiting...")
+        exit()
+    print("-------------------------------------")
+    print("Thank you for your confirmation, cleaning up...")
+    with open(linux_path + "/drivers/misc/Makefile") as file:
+        makefile = file.readlines()
+    if "obj-$(CONFIG_TMP_KUNIT_TEST) += tmp_kunit_test.o\n" in makefile:
+        print("Removing test file from Makefile...")
+        makefile.remove("obj-$(CONFIG_TMP_KUNIT_TEST) += tmp_kunit_test.o\n")
+        with open(linux_path + "/drivers/misc/Makefile", "w") as file:
+            file.writelines(makefile)
+    else:
+        print("Test file not found in Makefile!")
+    with open(linux_path + "/drivers/misc/Kconfig") as file:
+        kconfig = file.readlines()
+    if "config TMP_KUNIT_TEST\n" in kconfig:
+        print("Removing TMP_KUNIT_TEST from Kconfig...")
+        pos = kconfig.index("config TMP_KUNIT_TEST\n")
+        kconfig.remove(kconfig[pos])
+        kconfig.remove(kconfig[pos])
+        kconfig.remove(kconfig[pos])
+        kconfig.remove(kconfig[pos])
+        with open(linux_path + "/drivers/misc/Kconfig", "w") as file:
+            file.writelines(kconfig)
+    else:
+        print("TMP_KUNIT_TEST not found in Kconfig!")
+    with open(linux_path + "/.kunit/.kunitconfig") as file:
+        kunitconfig = file.readlines()
+    if "CONFIG_TMP_KUNIT_TEST=y\n" in kunitconfig:
+        print("Removing CONFIG_TMP_KUNIT_TEST from .kunitconfig...")
+        kunitconfig.remove("CONFIG_TMP_KUNIT_TEST=y\n")
+        with open(linux_path + "/.kunit/.kunitconfig", "w") as file:
+            file.writelines(kunitconfig)
+    else:
+        print("CONFIG_TMP_KUNIT_TEST not found in .kunitconfig!")
+    print("Cleaning up finished!")
+    print("-------------------------------------")
+
+
 def initialise():
-    global config, client, assistant
+    global config, client, assistant, linux_path
     with open("config.toml") as config_file:
         config = toml.load(config_file)
+
+    if not config["LINUX_PATH"]:
+        print("ERROR! Please set your LINUX_PATH in config.toml")
+        exit(1)
+    linux_path = os.path.abspath(config["LINUX_PATH"])
+    if not os.path.exists(linux_path) or not os.path.isdir(linux_path):
+        print("ERROR! LINUX_PATH not found or not a directory!")
+        exit(1)
 
     if not config["OPENAI_API_KEY"]:
         print("ERROR! Please set your OPENAI_API_KEY in config.toml")
@@ -139,13 +193,6 @@ def test_generating_mode():
             print("Using existing thread...")
             thread_id = config["THREAD_ID"]
             thread = client.beta.threads.retrieve(thread_id=thread_id)
-    if not config["LINUX_PATH"]:
-        print("ERROR! Please set your LINUX_PATH in config.toml")
-        exit(1)
-    linux_path = os.path.abspath(config["LINUX_PATH"])
-    if not os.path.exists(linux_path) or not os.path.isdir(linux_path):
-        print("ERROR! LINUX_PATH not found or not a directory!")
-        exit(1)
     filename = input("Please enter the path of the file you want to test(relative path from root of Linux kernel): ")
     file_path = linux_path + "/" + filename
     print("Full file path: " + file_path)
@@ -193,7 +240,7 @@ def test_generating_mode():
         file.write(return_code)
     with open(linux_path + "/drivers/misc/Makefile") as file:
         makefile = file.readlines()
-    if "obj-$(CONFIG_TMP_KUNIT_TEST) += tmp_kunit_test.o" in makefile:
+    if "obj-$(CONFIG_TMP_KUNIT_TEST) += tmp_kunit_test.o\n" in makefile:
         print("Test file already exists in Makefile!")
     else:
         print("Adding test file to Makefile...")
@@ -275,6 +322,7 @@ if __name__ == "__main__":
         print("Please select mode(error fixing is also included in test generating mode):")
         print("1. Test generating mode")
         print("2. Error fixing mode")
+        print("3. Clean up mode(clean up Kconfig, Makefile and .kunitconfig)")
         print("0. Exit")
         mode = input("Please enter mode: ")
         if mode == "1":
@@ -284,6 +332,10 @@ if __name__ == "__main__":
         elif mode == "2":
             print("-------------------------------------")
             error_fixing_mode()
+            end = True
+        elif mode == "3":
+            print("-------------------------------------")
+            cleanup()
             end = True
         elif mode == "0":
             end = True
