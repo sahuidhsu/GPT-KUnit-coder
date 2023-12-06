@@ -5,6 +5,9 @@ This is a simple Python script that utilize the beta Assistant API from openAI t
 create KUnit codes for Linux kernel files.
 > [!IMPORTANT]
 > **This script is under development right now, so do not expect it to work properly yet.** \
+> This script is only written and tested on Linux, it contains some Linux 
+bash commands(E.g. ```commandA && commandB 2> error.txt```) that might not work on Windows. If you would like to use it
+on Windows, feel free to modify those ```os.system()``` lines. \
 > Currently(23/11/2023) ***Assistant API*** is in a beta version, so it can be unstable and not work properly. \
 > Also, the API is not free, you will need to have an OpenAI account and have access to the API.
 
@@ -23,23 +26,27 @@ Then, you will need to change the default configuration in [config.toml](config.
 It's okay to leave `ASSISTANT_ID` and `THREAD_ID` blank, but you will need to fill in `OPENAI_API_KEY` and `LINUX_PATH`.
 
 ### Run
+Using the below command to run the main script
+```bash
+python3 main.py
+```
+or
+```bash
+./main.py
+```
+Then you will see a menu containing some options:
 #### Test generating mode
-To generate tests, you will need to run the following command:
-```bash
-python3 main.py # use python if you are using Windows
-```
-The script will ask you for the path of the file you want to generate the KUnit code for.
+This function script will ask you for the path of the file you want to generate the KUnit code for. \
+Then it will compile the file and run the tests. \
+After that, if errors occurred, you can then send the errors to GPT and return back the fixed code. \
 #### Code fixing mode
-To fix the code, you will need to include a text file with errors generated when running the tests:
-```bash
-python3 main.py <file> # use python if you are using Windows
-```
-The script will send the errors to GPT and return back the fixed code. \
-This step can be run multiple times to fix the code even more.
+**This function is also included in the test generating mode. If you run it individually,
+you will need to enter a path to a text file that contains errors.** \
+This function will send the errors to GPT and return back the fixed code. \
 #### Display messages
 To display messages, you will need to run the following command:
 ```bash
-python3 display_messages.py # use python if you are using Windows
+python3 display_messages.py
 ```
 This script will display all the messages from the conversation with GPT. \
 Please be aware that you will have to configure the threads correctly. \

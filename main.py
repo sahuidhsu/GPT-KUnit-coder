@@ -5,9 +5,7 @@
 # Copyright © 2023 by LTY_CK_TS, All Rights Reserved.
 ###
 import os
-import sys
 import time
-import subprocess
 
 import openai
 import toml
@@ -183,7 +181,7 @@ def test_generating_mode():
                 return_code = (this_content[start_pos + 4:end_pos]
                                .strip().replace("<linux/kunit/test.h>", "<kunit/test.h>"))
                 code_found = True
-        # print(return_code)
+        print(return_code)
         print("-------------------------------------")
     if not code_found:
         print("ERROR! No code found in the responses!")
@@ -226,10 +224,9 @@ def test_generating_mode():
     print("-------------------------------------")
     print("Now compiling and running tests...")
     print("-------------------------------------")
-    result = subprocess.run(["cd " + linux_path + " && ./tools/testing/kunit/kunit.py run"],
-                                     shell=False, capture_output=True)
-    result = str(result)
-    print(result)
+    os.system("cd " + linux_path + " && ./tools/testing/kunit/kunit.py run 2> " + os.getcwd() + "/error.txt")
+    with open("error.txt") as file:
+        result = file.read()
     start_pos = result.find("ERROR")
     if start_pos != -1 and result.find("unsatisfied dependencies") != -1:
         print("-------------------------------------")
@@ -238,8 +235,12 @@ def test_generating_mode():
         print("-------------------------------------")
         exit(1)
     while start_pos != -1:
+        print("-------------------------------------")
+        print(result[start_pos:])
+        print("-------------------------------------")
         print("There's error, do you want to send errors to assistant? (Y/n) ")
         entry = input()
+        print("-------------------------------------")
         if entry.lower() not in ["n", "no", "dont", "not"]:
             error = result[start_pos:]
             result_code = error_fixing_mode(text=error)
@@ -248,10 +249,9 @@ def test_generating_mode():
                 print("-------------------------------------")
                 with open(test_file, "w") as file:
                     file.write(result_code)
-                result = subprocess.check_output(["cd " + linux_path + " && ./tools/testing/kunit/kunit.py run"],
-                                                 shell=False).decode()
-                result = str(result)
-                print(result)
+                os.system("cd " + linux_path + " && ./tools/testing/kunit/kunit.py run 2> " + os.getcwd() + "/error.txt")
+                with open("error.txt") as file:
+                    result = file.read()
                 start_pos = result.find("ERROR")
             else:
                 exit(1)
