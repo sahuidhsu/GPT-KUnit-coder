@@ -5,12 +5,13 @@
 # Copyright © 2023 by LTY_CK_TS, All Rights Reserved.
 ###
 import os
+import sys
 import time
 
 import openai
 import toml
 
-global end, config, client, assistant, linux_path
+global end, config, client, assistant, linux_path, auto_mode
 
 
 def send_message(msg_client, msg_thread, msg_assistant, msg):
@@ -120,15 +121,16 @@ def initialise():
     if not config["ASSISTANT_ID"]:
         print("No existing assistant found. Now creating new assistant...")
         assistant = client.beta.assistants.create(name="KUnit developer",
-                                                  instructions="You are a developer who is very familiar with the KUnit "
-                                                               "tests in Linux kernel.\nUser will send you pieces of "
-                                                               "source code. You should create some executable "
-                                                               "corresponding KUnit test cases to test out the code."
-                                                               "User may also send you errors that occur when running,"
-                                                               "you should fix the errors and send back the fixed code."
-                                                               "\nDo not include any sentences other than the code "
-                                                               "itself in your reply. You should implement all the codes,"
-                                                               "do not leave any space for the user to add any code.",
+                                                  instructions="You are a developer who is very familiar with the "
+                                                               "KUnit tests in Linux kernel.\nUser will send you "
+                                                               "pieces of source code. You should create some "
+                                                               "executable corresponding KUnit test cases to "
+                                                               "test out the code.User may also send you errors "
+                                                               "that occur when running, you should fix the errors "
+                                                               "and send back the fixed code.\nDo not include any "
+                                                               "sentences other than the code itself in your reply. "
+                                                               "You should implement all the codes, do not leave any "
+                                                               "space for the user to add any code.",
                                                   tools=[],
                                                   model="gpt-4-1106-preview")
         with open("config.toml", "w") as config_file:
@@ -159,7 +161,8 @@ def error_fixing_mode(text=None):
         errors = text
     received_content = send_message(client, thread, assistant, errors)
     if not received_content:
-        exit(1)
+        print("ERROR! No response received!")
+        return ""
     result_code = ""
     print("---------Generated Code-------------")
     for this_content in received_content:
@@ -169,7 +172,7 @@ def error_fixing_mode(text=None):
     return result_code
 
 
-def test_generating_mode():
+def test_generating_mode(abs_path=None, start_l=None, end_l=None):
     print("Entering test generating mode...")
     if not config["THREAD_ID"]:
         print("No existing thread found. Now creating new thread...")
@@ -178,11 +181,11 @@ def test_generating_mode():
             config["THREAD_ID"] = thread.id
             toml.dump(config, config_file)
     else:
-        entry = input("Do you want to start a new thread? (y/N) ")
+        entry = "y" if auto_mode else input("Do you want to create a new thread? (y/N) ")
         if entry in ["y", "Y"]:
             delete_thread = client.beta.threads.delete(thread_id=config["THREAD_ID"])
             if not delete_thread.deleted:
-                print("ERROR! Failed to delete thread!")
+                print(f"ERROR! Failed to delete thread {config['THREAD_ID']}!")
                 exit(1)
             print("Thread deleted! Now creating new thread...")
             thread = client.beta.threads.create()
@@ -193,17 +196,20 @@ def test_generating_mode():
             print("Using existing thread...")
             thread_id = config["THREAD_ID"]
             thread = client.beta.threads.retrieve(thread_id=thread_id)
-    filename = input("Please enter the path of the file you want to test(relative path from root of Linux kernel): ")
-    file_path = linux_path + "/" + filename
+    file_path = abs_path if auto_mode else (linux_path + "/" + input("Enter the path of the file you want to "
+                                                                     "test(relative path from root of Linux kernel): "))
     print("Full file path: " + file_path)
-    if not os.path.exists(file_path):
+    if not os.path.exists(file_path) or not os.path.isfile(file_path):
         print("ERROR! File not found!")
         exit(1)
     with open(file_path) as file:
         code = file.readlines()
-    start_line = int(input("Please enter the start line of the code: "))
-    end_line = int(input("Please enter the end line of the code: "))
+    start_line = start_l if auto_mode else int(input("Please enter the start line of the code: "))
+    end_line = end_l if auto_mode else int(input("Please enter the end line of the code: "))
     print("-------------------------------------")
+    if start_line > end_line:
+        print("ERROR! Start line should be smaller than end line!")
+        exit(1)
     code = "".join(code[start_line - 1:end_line])
     received_content = send_message(client, thread, assistant, code)
     if not received_content:
@@ -231,15 +237,19 @@ def test_generating_mode():
         print(return_code)
         print("-------------------------------------")
     if not code_found:
-        print("ERROR! No code found in the responses!")
-        exit()
+        print("ERROR! No code found in all the responses! Exiting...")
+        exit(1)
+
     print("Writing code to file...")
     print("-------------------------------------")
+
     test_file = linux_path + "/drivers/misc/tmp_kunit_test.c"
     with open(test_file, "w") as file:
         file.write(return_code)
+
     with open(linux_path + "/drivers/misc/Makefile") as file:
         makefile = file.readlines()
+
     if "obj-$(CONFIG_TMP_KUNIT_TEST) += tmp_kunit_test.o\n" in makefile:
         print("Test file already exists in Makefile!")
     else:
@@ -247,6 +257,7 @@ def test_generating_mode():
         makefile.append("\nobj-$(CONFIG_TMP_KUNIT_TEST) += tmp_kunit_test.o\n")
         with open(linux_path + "/drivers/misc/Makefile", "w") as file:
             file.writelines(makefile)
+
     with open(linux_path + "/drivers/misc/Kconfig") as file:
         kconfig = file.readlines()
     if "config TMP_KUNIT_TEST\n" in kconfig:
@@ -259,6 +270,7 @@ def test_generating_mode():
         kconfig.append("\tdefault KUNIT_ALL_TESTS\n")
         with open(linux_path + "/drivers/misc/Kconfig", "w") as file:
             file.writelines(kconfig)
+
     with open(linux_path + "/.kunit/.kunitconfig") as file:
         kunitconfig = file.readlines()
     if "CONFIG_TMP_KUNIT_TEST=y\n" in kunitconfig:
@@ -268,12 +280,16 @@ def test_generating_mode():
         kunitconfig.append("\nCONFIG_TMP_KUNIT_TEST=y\n")
         with open(linux_path + "/.kunit/.kunitconfig", "w") as file:
             file.writelines(kunitconfig)
+
     print("-------------------------------------")
     print("Now compiling and running tests...")
     print("-------------------------------------")
-    os.system("cd " + linux_path + " && ./tools/testing/kunit/kunit.py run 2> " + os.getcwd() + "/error.txt")
+    os.system(f"cd {linux_path} && ./tools/testing/kunit/kunit.py run 2> {os.getcwd()}/error.txt")
+
+    # Self-debugging
     with open("error.txt") as file:
         result = file.read()
+
     start_pos = result.find("ERROR")
     if start_pos != -1 and result.find("unsatisfied dependencies") != -1:
         print("-------------------------------------")
@@ -281,12 +297,12 @@ def test_generating_mode():
         print("The test file is located at: " + test_file)
         print("-------------------------------------")
         exit(1)
+
     while start_pos != -1:
         print("-------------------------------------")
         print(result[start_pos:])
         print("-------------------------------------")
-        print("There's error, do you want to send errors to assistant? (Y/n) ")
-        entry = input()
+        entry = "y" if auto_mode else input("There's error, do you want to send errors to assistant? (Y/n) ")
         print("-------------------------------------")
         if entry.lower() not in ["n", "no", "dont", "not"]:
             error = result[start_pos:]
@@ -296,9 +312,12 @@ def test_generating_mode():
                 print("-------------------------------------")
                 with open(test_file, "w") as file:
                     file.write(result_code)
-                os.system("cd " + linux_path + " && ./tools/testing/kunit/kunit.py run 2> " + os.getcwd() + "/error.txt")
+
+                os.system(f"cd {linux_path} && ./tools/testing/kunit/kunit.py run 2> {os.getcwd()}/error.txt")
+
                 with open("error.txt") as file:
                     result = file.read()
+
                 start_pos = result.find("ERROR")
             else:
                 exit(1)
@@ -313,34 +332,57 @@ def test_generating_mode():
 if __name__ == "__main__":
     print("-------------------------------------")
     print("GPT KUnit Test Generator")
-    print("Author: LTY_CK_TS")
-    print("Version: 0.1.0")
-    print("-------------------------------------")
-    initialise()
-    end = False
-    while not end:
-        print("Please select mode(error fixing is also included in test generating mode):")
-        print("1. Test generating mode")
-        print("2. Error fixing mode")
-        print("3. Clean up mode(clean up Kconfig, Makefile and .kunitconfig)")
-        print("0. Exit")
-        mode = input("Please enter mode: ")
-        if mode == "1":
-            print("-------------------------------------")
-            test_generating_mode()
-            end = True
-        elif mode == "2":
-            print("-------------------------------------")
-            error_fixing_mode()
-            end = True
-        elif mode == "3":
-            print("-------------------------------------")
-            cleanup()
-            end = True
-        elif mode == "0":
-            end = True
-        else:
-            print("-------------------------------------")
-            print("ERROR! Invalid mode!")
-            print("-------------------------------------")
+    if len(sys.argv) > 3:
+        abs_path = os.path.abspath(sys.argv[1])
+        if not os.path.exists(abs_path) or not os.path.isfile(abs_path):
+            print("ERROR! File not found!")
+            exit(1)
+        try:
+            start_line = int(sys.argv[2])
+            end_line = int(sys.argv[3])
+        except ValueError:
+            print("ERROR! Invalid start line or end line!")
+            exit(1)
+        auto_mode = True
+        max_debug_time = 5
+        print(f"Auto mode enabled, max self-debugging times: {max_debug_time}")
+        print("Author: LTY_CK_TS")
+        print("Version: 0.1.0")
+        print("-------------------------------------")
+        test_generating_mode(abs_path=abs_path, start_l=start_line, end_l=end_line)
+    elif len(sys.argv) > 1:
+        print("ERROR! You should specify the path as well as the start line and end line as argument!")
+        exit(1)
+    else:
+        auto_mode = False
+        print("Author: LTY_CK_TS")
+        print("Version: 0.1.0")
+        print("-------------------------------------")
+        initialise()
+        end = False
+        while not end:
+            print("Please select mode(error fixing is also included in test generating mode):")
+            print("1. Test generating mode")
+            print("2. Error fixing mode")
+            print("3. Clean up mode(clean up Kconfig, Makefile and .kunitconfig)")
+            print("0. Exit")
+            mode = input("Please enter mode: ")
+            if mode == "1":
+                print("-------------------------------------")
+                test_generating_mode()
+                end = True
+            elif mode == "2":
+                print("-------------------------------------")
+                error_fixing_mode()
+                end = True
+            elif mode == "3":
+                print("-------------------------------------")
+                cleanup()
+                end = True
+            elif mode == "0":
+                end = True
+            else:
+                print("-------------------------------------")
+                print("ERROR! Invalid mode!")
+                print("-------------------------------------")
     print("Exiting...")
