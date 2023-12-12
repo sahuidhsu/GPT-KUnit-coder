@@ -18,13 +18,13 @@ automatically create KUnit codes for Linux kernel files.</h3>
 <h4 align="center">System supported: Linux, macOS(not tested) </h4>
 
 > [!IMPORTANT]
-> **This script is under development right now, it is working but may contains bugs, issues and PRs welcomed.** \
+> **This script is under development right now, it is working but may contain bugs, issues and PRs welcomed.**
 > 
 > This script is only written and tested on Linux, it contains some Linux 
 bash commands(E.g. ```commandA && commandB 2> error.txt```) that might not work on Windows. If you would like to use it
-on Windows, feel free to modify those ```os.system()``` lines. \
+on Windows, feel free to modify those ```os.system()``` lines.
 > 
-> Currently(23/11/2023) ***Assistant API*** is in a beta version, so it can be unstable and not work properly. \
+> Up to now(12/12/2023) ***Assistant API*** is in a beta version, it might be unstable and not work properly.
 > 
 > The API is not free, you will need to have an OpenAI account and have access to the API.
 
