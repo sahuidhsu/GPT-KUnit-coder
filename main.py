@@ -298,14 +298,23 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
         print("-------------------------------------")
         exit(1)
 
+    debug_times = 0
     while start_pos != -1:
+        if debug_times >= max_debug_time and auto_mode:
+            print("-------------------------------------")
+            print("Max self-debugging times exceeded! Exiting...")
+            print("The uncompleted test file is located at: " + test_file)
+            print("-------------------------------------")
+            exit(0)
         print("-------------------------------------")
         print(result[start_pos:])
         print("-------------------------------------")
-        entry = "y" if auto_mode else input("There's error, do you want to send errors to assistant? (Y/n) ")
-        print("-------------------------------------")
+        entry = "y" if auto_mode else input("There's error, do you want to send errors to assistant? (Y/n) \n"
+                                            "-------------------------------------")
         if entry.lower() not in ["n", "no", "dont", "not"]:
             error = result[start_pos:]
+            debug_times += 1
+            print(f"Self-debugging times: {debug_times}")
             result_code = error_fixing_mode(text=error)
             if result_code != "":
                 print("Now running fixed code...")
@@ -333,7 +342,8 @@ if __name__ == "__main__":
     print("-------------------------------------")
     print("GPT KUnit Test Generator")
     if len(sys.argv) > 3:
-        abs_path = os.path.abspath(sys.argv[1])
+        initialise()
+        abs_path = linux_path + "/" + sys.argv[1]
         if not os.path.exists(abs_path) or not os.path.isfile(abs_path):
             print("ERROR! File not found!")
             exit(1)

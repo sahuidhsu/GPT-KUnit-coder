@@ -1,8 +1,22 @@
-# GPT-KUnit-coder
-[![OpenAI](https://img.shields.io/badge/OpenAI-API-00A000?style=for-the-badge&logo=openai)](https://beta.openai.com/docs/api-reference/introduction)
-## Introduction
-This is a simple Python script that utilize the beta Assistant API from openAI to automatically
-create KUnit codes for Linux kernel files.
+<h1 align="center">GPT-KUnit-coder</h1>
+<p align="center">
+    <a href="https://github.com/sahuidhsu/GPT-KUnit-coder/stargazers" style="text-decoration:none" >
+        <img src="https://img.shields.io/github/stars/sahuidhsu/GPT-KUnit-coder.svg" alt="GitHub stars"/>
+    </a>
+    <a href="https://github.com/sahuidhsu/GPT-KUnit-coder/blob/main/LICENSE" style="text-decoration:none" >
+        <img src="https://img.shields.io/github/license/sahuidhsu/GPT-KUnit-coder" alt="GitHub license"/>
+    </a>
+    <img src="https://img.shields.io/github/repo-size/sahuidhsu/GPT-KUnit-coder" alt="GitHub repo size"/>
+    <img src="https://img.shields.io/github/last-commit/sahuidhsu/GPT-KUnit-coder" alt="GitHub last commit"/>
+    <br>
+    <a href="https://platform.openai.com/docs/api-reference/introduction" style="text-decoration:none" >
+        <img src="https://img.shields.io/badge/OpenAI-API-00A000?style=for-the-badge&logo=openai" alt="OpenAI"/>
+    </a>
+</p>
+<h3 align="center">a simple Python script that utilize the beta Assistant API from openAI to 
+automatically create KUnit codes for Linux kernel files.</h3>
+<h4 align="center">System supported: Linux, macOS(not tested) </h4>
+
 > [!IMPORTANT]
 > **This script is under development right now, so do not expect it to work properly yet.** \
 > This script is only written and tested on Linux, it contains some Linux 
@@ -25,8 +39,28 @@ pip3 install -r requirements.txt
 Then, you will need to change the default configuration in [config.toml](config.toml) to your own. \
 It's okay to leave `ASSISTANT_ID` and `THREAD_ID` blank, but you will need to fill in `OPENAI_API_KEY` and `LINUX_PATH`.
 
-### Run
-Using the below command to run the main script
+### Run(Auto Mode)
+Using the below command to run the main script in auto mode
+```bash
+python3 main.py <path to file> <start line> <end line>
+```
+or
+```bash
+./main.py <path to file> <start line> <end line>
+```
+This will automatically generate the KUnit code for the file you specified as well as
+test and self-debug. \
+Please use relative path to Linux kernel root instead of absolute path. \
+For example, if you want to generate KUnit code for `<linux_path>/drivers/nvme/host/trace.c` with function located 
+between line 21 and 35, your command would be:
+```bash
+python3 main.py drivers/nvme/host/trace.c 21 35
+```
+There's a variable `max_debug_time` in line 357 of [main.py](main.py) that controls 
+the maximum times for self-debugging. It's set to 5 by default, you can change it to any number you want.
+
+### Run(Manual Mode)
+Using the below command to run the main script by manually choosing options
 ```bash
 python3 main.py
 ```
@@ -46,8 +80,9 @@ This function will send the errors to GPT and return back the fixed code.
 #### Clean up mode
 This function will remove the test file from Makefile, Kconfig and .kunitconfig, but not the test file itself. \
 There's a double check confirmation to make sure you want to remove the test file.
-#### Display messages
-To display messages, you will need to run the following command:
+
+### Display messages
+To display all the conversation messages belongs to current thread, you can run the following command:
 ```bash
 python3 display_messages.py
 ```
