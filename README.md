@@ -18,12 +18,15 @@ automatically create KUnit codes for Linux kernel files.</h3>
 <h4 align="center">System supported: Linux, macOS(not tested) </h4>
 
 > [!IMPORTANT]
-> **This script is under development right now, so do not expect it to work properly yet.** \
+> **This script is under development right now, it is working but may contains bugs, issues and PRs welcomed.** \
+> 
 > This script is only written and tested on Linux, it contains some Linux 
 bash commands(E.g. ```commandA && commandB 2> error.txt```) that might not work on Windows. If you would like to use it
 on Windows, feel free to modify those ```os.system()``` lines. \
+> 
 > Currently(23/11/2023) ***Assistant API*** is in a beta version, so it can be unstable and not work properly. \
-> Also, the API is not free, you will need to have an OpenAI account and have access to the API.
+> 
+> The API is not free, you will need to have an OpenAI account and have access to the API.
 
 ## How to use
 ### Requirements
@@ -32,15 +35,15 @@ on Windows, feel free to modify those ```os.system()``` lines. \
 - OpenAI account with access to the Assistant API
 - A valid API key
 ### Installation
-First, you will need to install dependencies:
+First, install dependencies:
 ```bash
 pip3 install -r requirements.txt
 ```
-Then, you will need to change the default configuration in [config.toml](config.toml) to your own. \
-It's okay to leave `ASSISTANT_ID` and `THREAD_ID` blank, but you will need to fill in `OPENAI_API_KEY` and `LINUX_PATH`.
+Then, change the default configuration in [config.toml](config.toml) to your own. \
+It's okay to leave `ASSISTANT_ID` and `THREAD_ID` blank, but `OPENAI_API_KEY` and `LINUX_PATH` are necessary.
 
 ### Run(Auto Mode)
-Using the below command to run the main script in auto mode
+Use the below command to run the main script in auto mode
 ```bash
 python3 main.py <path to file> <start line> <end line>
 ```
@@ -48,8 +51,8 @@ or
 ```bash
 ./main.py <path to file> <start line> <end line>
 ```
-This will automatically generate the KUnit code for the file you specified as well as
-test and self-debug. \
+This will automatically generate the KUnit code for the file you,
+test it and self-debug. \
 Please use relative path to Linux kernel root instead of absolute path. \
 For example, if you want to generate KUnit code for `<linux_path>/drivers/nvme/host/trace.c` with function located 
 between line 21 and 35, your command would be:
@@ -60,7 +63,7 @@ There's a variable `max_debug_time` in line 357 of [main.py](main.py) that contr
 the maximum times for self-debugging. It's set to 5 by default, you can change it to any number you want.
 
 ### Run(Manual Mode)
-Using the below command to run the main script by manually choosing options
+Use the below command to run the main script by manually choosing options
 ```bash
 python3 main.py
 ```
