@@ -120,7 +120,7 @@ def initialise():
 
     if not config["ASSISTANT_ID"]:
         print("No existing assistant found. Now creating new assistant...")
-        assistant = client.beta.assistants.create(name="KUnit developer",
+        assistant = client.beta.assistants.create(name="KUnit developer-3.5-Turbo",
                                                   instructions="You are a developer who is very familiar with the "
                                                                "KUnit tests in Linux kernel.\nUser will send you "
                                                                "pieces of source code. You should create some "
@@ -130,9 +130,10 @@ def initialise():
                                                                "and send back the fixed code.\nDo not include any "
                                                                "sentences other than the code itself in your reply. "
                                                                "You should implement all the codes, do not leave any "
-                                                               "space for the user to add any code.",
+                                                               "space for the user to add any code.\nYou must"
+                                                               "contain your code between \"```c\" and \"```\".",
                                                   tools=[],
-                                                  model="gpt-4-1106-preview")
+                                                  model="gpt-3.5-turbo")
         with open("config.toml", "w") as config_file:
             config["ASSISTANT_ID"] = assistant.id
             toml.dump(config, config_file)
