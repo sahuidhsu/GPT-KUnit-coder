@@ -167,7 +167,19 @@ def error_fixing_mode(text=None):
     result_code = ""
     print("---------Generated Code-------------")
     for this_content in received_content:
-        result_code = this_content[4:-4].strip()
+        if this_content[:4] == "```c" and this_content[-3:] == "```":
+            result_code = this_content[4:-4].strip()
+        else:
+            start_pos = this_content.find("```c")
+            end_pos = this_content.rfind("```")
+            if start_pos == -1 or end_pos == -1:
+                print(this_content)
+                print("-------------------------------------")
+                print("ERROR! No code found in this response!")
+                print("-------------------------------------")
+                return ""
+            else:
+                result_code = (this_content[start_pos + 4:end_pos].strip())
         print(result_code)
         print("-------------------------------------")
     return result_code
@@ -355,10 +367,10 @@ if __name__ == "__main__":
             print("ERROR! Invalid start line or end line!")
             exit(1)
         auto_mode = True
-        max_debug_time = 5
+        max_debug_time = 10
         print(f"Auto mode enabled, max self-debugging times: {max_debug_time}")
         print("Author: LTY_CK_TS")
-        print("Version: 0.1.0")
+        print("Version: 0.2.0")
         print("-------------------------------------")
         test_generating_mode(abs_path=abs_path, start_l=start_line, end_l=end_line)
     elif len(sys.argv) > 1:
