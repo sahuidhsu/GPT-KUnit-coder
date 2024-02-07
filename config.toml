@@ -1,4 +1,1 @@
-OPENAI_API_KEY = ""
-ASSISTANT_ID = ""
-THREAD_ID = ""
-LINUX_PATH = ""
+LINUX_PATH = "/home/sahuidhsu/linux"
