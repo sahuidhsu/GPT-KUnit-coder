@@ -24,6 +24,13 @@ def send_message(msg):
     return response.text
 
 
+def write_log():
+    log = open("message_log.txt", "w")
+    for message in chat.history:
+        log.write(f'{"-" * 20}\n{message.role}\n{"-" * 20}\n{message.parts[0].text}\n')
+    log.close()
+
+
 def initialise():
     global config, linux_path
     with open("config.toml") as config_file:
@@ -38,12 +45,13 @@ def initialise():
         exit(1)
     print("-------------------------------------")
     print("Initialising prompt to Gemini API...")
-    chat.send_message("I want you to help me with some KUnit tests. I will then "
-                      "send you pieces of source code. You should create some executable corresponding KUnit "
-                      "test cases to test out the code. I may also send you the errors that occur when running,"
+    chat.send_message("I want you to help me with some KUnit tests that works in Linux kernel source code. I will soon "
+                      "send you pieces of source code in C. You should create some executable corresponding KUnit "
+                      "test file to test out the code. I may also send you the errors that occur when running,"
                       "you should fix the errors and send back the fixed code. Do not include any sentences "
                       "other than the code itself in your reply. You should implement all the codes,do not leave any "
-                      "space for the user to add any code.")
+                      "space for the user to add any code. Do not send any text that is not code. Answer YES if you "
+                      "understand the prompt.")
     print("Prompt set!")
 
 
@@ -75,6 +83,7 @@ def error_fixing_mode(text=None):
             print("-------------------------------------")
             print("ERROR! No code found in this response!")
             print("-------------------------------------")
+            write_log()
             return ""
         else:
             result_code = (this_content[start_pos + 4:end_pos].strip())
@@ -113,6 +122,7 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
             print("-------------------------------------")
             print("ERROR! No code found in this response!")
             print("-------------------------------------")
+            write_log()
             exit(1)
         else:
             return_code = (this_content[start_pos + 4:end_pos]
@@ -181,6 +191,7 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
     debug_times = 0
     while start_pos != -1:
         if debug_times >= max_debug_time:
+            write_log()
             print("-------------------------------------")
             print("Max self-debugging times exceeded! Exiting...")
             print("The uncompleted test file is located at: " + test_file)
@@ -207,6 +218,7 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
             start_pos = result.find("ERROR")
         else:
             exit(1)
+    write_log()
     print("-------------------------------------")
     print("All tests passed! Congratulations!")
     print("The test file is located at: " + test_file)
