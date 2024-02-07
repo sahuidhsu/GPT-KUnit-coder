@@ -335,7 +335,7 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
                 with open(test_file, "w") as file:
                     file.write(result_code)
 
-                os.system(f"cd {linux_path} && ./tools/testing/kunit/kunit.py run 2> {os.getcwd()}/error.txt")
+                os.system(f"cd {linux_path} && ./tools/testing/kunit/kunit.py run > {os.getcwd()}/error.txt 2>&1")
 
                 with open("error.txt") as file:
                     result = file.read()
@@ -379,7 +379,7 @@ if __name__ == "__main__":
     else:
         auto_mode = False
         print("Author: LTY_CK_TS")
-        print("Version: 0.1.0")
+        print("Version: 0.2.0")
         print("-------------------------------------")
         initialise()
         end = False
