@@ -44,15 +44,6 @@ def initialise():
         print("ERROR! LINUX_PATH not found or not a directory!")
         exit(1)
     print("-------------------------------------")
-    print("Initialising prompt to Gemini API...")
-    chat.send_message("I want you to help me with some KUnit tests that works in Linux kernel source code. I will soon "
-                      "send you pieces of source code in C. You should create some executable corresponding KUnit "
-                      "test file to test out the code. I may also send you the errors that occur when running,"
-                      "you should fix the errors and send back the fixed code. Do not include any sentences "
-                      "other than the code itself in your reply. You should implement all the codes,do not leave any "
-                      "space for the user to add any code. Do not send any text that is not code. Answer YES if you "
-                      "understand the prompt.")
-    print("Prompt set!")
 
 
 def error_fixing_mode(text=None):
@@ -68,7 +59,11 @@ def error_fixing_mode(text=None):
             errors = file.read()
     else:
         errors = text
-    this_content = send_message(errors)
+    prompt = (f"Please fix the following errors and return only the fixed code:\n```\n{errors}\n```\nMake sure you do "
+              f"not include any sentences other than the code itself in your reply. "
+              f"You should return the complete code file, make sure the code is inside a ```c block."
+              f"Do not leave any space for the user to add any code or add any comment that is not inside the code.")
+    this_content = send_message(prompt)
     if not this_content:
         print("ERROR! No response received!")
         return ""
@@ -108,7 +103,11 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
         print("ERROR! Start line should be smaller than end line!")
         exit(1)
     code = "".join(code[start_line - 1:end_line])
-    this_content = send_message(code)
+    prompt = (f"Please generate a KUnit test file for the following code:\n```c\n{code}\n```\nMake sure you "
+              f"do not include any sentences other than the code itself in your reply. You should implement all the "
+              f"codes, do not leave any space for the user to add any code or add any comment "
+              f"that is not inside the code. Make sure the code is inside a ```c block.")
+    this_content = send_message(prompt)
     if not this_content:
         exit(1)
     print("---------Generated Code-------------")
@@ -240,7 +239,7 @@ if __name__ == "__main__":
         except ValueError:
             print("ERROR! Invalid start line or end line!")
             exit(1)
-        max_debug_time = 5
+        max_debug_time = 10
         print(f"Auto mode enabled, max self-debugging times: {max_debug_time}")
         print("Author: LTY_CK_TS")
         print("Version: 0.1.0")

@@ -66,5 +66,8 @@ python3 main.py drivers/nvme/host/trace.c 21 35
 There's a variable `max_debug_time` in line 242 of [main.py](main.py) that controls 
 the maximum times for self-debugging. It's set to 5 by default, you can change it to any number you want.
 
+### Conversation Log
+The conversation log between the script and the API will be saved in `message_log.txt` if it didn't quit unexpectedly.
+
 ### License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
