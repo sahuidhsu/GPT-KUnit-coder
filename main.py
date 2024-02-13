@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 ###
-# GPT KUnit Test Generator Gemini Version
+# GPT KUnit Test Generator Workers AI Version
 # Author: LTY_CK_TS
 # Copyright © 2024 by LTY_CK_TS, All Rights Reserved.
 ###
 import os
 import sys
-import time
+import requests
 
-from vertexai.preview.generative_models import GenerativeModel
 import toml
 
 global end, config, linux_path
 
-model = GenerativeModel("gemini-pro")
-chat = model.start_chat(history=[])
+model = "@cf/meta/llama-2-7b-chat-int8"  # llama-2-7b-chat-int8 model from Meta
+# model = "@hf/thebloke/deepseek-coder-6.7b-base-awq"  # deepseek-coder with base-awq model from Hugging Face
+# model = "@hf/thebloke/deepseek-coder-6.7b-instruct-awq"  # deepseek-coder with instruct-awq model from Hugging Face
 
 
 def send_message(msg):
@@ -197,9 +197,9 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
             print("-------------------------------------")
             exit(0)
         print("-------------------------------------")
-        print(result[start_pos:])
+        print(result)
         print("-------------------------------------")
-        error = result[start_pos:]
+        error = result
         debug_times += 1
         print(f"Self-debugging times: {debug_times}")
         result_code = error_fixing_mode(text=error)
@@ -226,7 +226,7 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
 
 if __name__ == "__main__":
     print("-------------------------------------")
-    print("GPT KUnit Test Generator Gemini Ver")
+    print("GPT KUnit Test Generator Workers AI Ver")
     if len(sys.argv) > 3:
         initialise()
         abs_path = linux_path + "/" + sys.argv[1]
