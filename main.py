@@ -319,12 +319,12 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
             print("-------------------------------------")
             exit(0)
         print("-------------------------------------")
-        print(result[start_pos:])
+        print(result)
         print("-------------------------------------")
         entry = "y" if auto_mode else input("There's error, do you want to send errors to assistant? (Y/n) \n"
                                             "-------------------------------------")
         if entry.lower() not in ["n", "no", "dont", "not"]:
-            error = result[start_pos:]
+            error = result
             debug_times += 1
             print(f"Self-debugging times: {debug_times}")
             result_code = error_fixing_mode(text=error)
