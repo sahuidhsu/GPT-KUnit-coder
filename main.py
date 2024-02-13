@@ -7,21 +7,33 @@
 import os
 import sys
 import requests
+import json
 
 import toml
 
-global end, config, linux_path
+global end, config, linux_path, history
 
 model = "@cf/meta/llama-2-7b-chat-int8"  # llama-2-7b-chat-int8 model from Meta
 # model = "@hf/thebloke/deepseek-coder-6.7b-base-awq"  # deepseek-coder with base-awq model from Hugging Face
 # model = "@hf/thebloke/deepseek-coder-6.7b-instruct-awq"  # deepseek-coder with instruct-awq model from Hugging Face
 
 
-def send_message(msg):
+def send_message(history, msg):
     print("Message sent! Now waiting for reply...")
-    response = chat.send_message(msg)
+    history.append({"role": "user", "content": msg})
+    response = requests.post(
+        f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{model}",
+        headers={
+            "Authorization": f"Bearer {api_token}",
+            "Content-Type": "application/json",
+        },
+        json={"messages": history},
+        timeout=60,
+    )
     print("Message received!")
-    return response.text
+    response_text = response.json()["result"]["response"]
+    history.append({"role": "system", "content": response_text})
+    return response_text
 
 
 def write_log():
@@ -32,7 +44,7 @@ def write_log():
 
 
 def initialise():
-    global config, linux_path
+    global config, linux_path, account_id, api_token, history
     with open("config.toml") as config_file:
         config = toml.load(config_file)
 
@@ -43,6 +55,25 @@ def initialise():
     if not os.path.exists(linux_path) or not os.path.isdir(linux_path):
         print("ERROR! LINUX_PATH not found or not a directory!")
         exit(1)
+    if not config["CF_API_KEY"]:
+        print("ERROR! Please set your CF_API_KEY in config.toml")
+        exit(1)
+    if not config["CF_ACCOUNT_ID"]:
+        print("ERROR! Please set your CF_ACCOUNT_ID in config.toml")
+        exit(1)
+    account_id = config["CF_ACCOUNT_ID"]
+    api_token = config["CF_API_KEY"]
+    history = [{"role": "system", "content": "You are a developer who is very familiar with the "
+                                             "KUnit tests in Linux kernel.\nUser will send you "
+                                             "pieces of source code. You should create some "
+                                             "executable corresponding KUnit test cases to "
+                                             "test out the code.User may also send you errors "
+                                             "that occur when running, you should fix the errors "
+                                             "and send back the fixed code.\nDo not include any "
+                                             "sentences other than the code itself in your reply. "
+                                             "You should implement all the codes, do not leave any "
+                                             "space for the user to add any code."}
+               ]
     print("-------------------------------------")
 
 
