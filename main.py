@@ -14,24 +14,34 @@ import toml
 global end, config, linux_path, history
 
 # model = "@cf/meta/llama-2-7b-chat-int8"  # llama-2-7b-chat-int8 model from Meta
-model = "@hf/thebloke/deepseek-coder-6.7b-base-awq"  # deepseek-coder with base-awq model from Hugging Face
+model = "@hf/thebloke/codellama-7b-instruct-awq"  # codellama-7b-instruct-awq model from Meta via Hugging Face
 # model = "@hf/thebloke/deepseek-coder-6.7b-instruct-awq"  # deepseek-coder with instruct-awq model from Hugging Face
 
 
 def send_message(history, msg):
     print("Message sent! Now waiting for reply...")
     history.append({"role": "user", "content": msg})
+    response_text = ""
     response = requests.post(
         f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{model}",
         headers={
             "Authorization": f"Bearer {api_token}",
             "Content-Type": "application/json",
         },
-        json={"messages": history},
+        json={"stream": True, "messages": history},
         timeout=40,
+        stream=True,
     )
-    print("Message received!")
-    response_text = response.json()["result"]["response"]
+    for line in response.iter_lines():
+        if line:
+            decoded_line = line.decode('utf-8')
+            if decoded_line == 'data: [DONE]':
+                print("\nMessage received!")
+                break
+            else:
+                json_line = json.loads(decoded_line.split(': ')[1])
+                response_text += json_line["response"]
+                print(json_line["response"], end="")
     history.append({"role": "system", "content": response_text})
     return response_text
 
@@ -65,12 +75,12 @@ def initialise():
     api_token = config["CF_API_KEY"]
     history = [{"role": "system", "content": "I am a developer who is very familiar with the "
                                              "KUnit tests in Linux kernel.\nUser will send me "
-                                             "pieces of source code. I should create some "
-                                             "executable corresponding KUnit test cases to "
+                                             "pieces of source code. I should create an "
+                                             "executable corresponding complete KUnit test file to "
                                              "test out the code. User may also send me errors "
                                              "that occur when running, I should fix the errors "
                                              "and send back the fixed code.\nDo not include any "
-                                             "sentences other than the code itself in my reply. "
+                                             "words other than the code itself in the reply. "
                                              "I should implement all the codes and make sure the codes are "
                                              "inside a ```c and ```, do not leave any space for the user "
                                              "to add any code."}
@@ -83,9 +93,9 @@ def error_fixing_mode(text=None):
     errors = text
     this_content = send_message(history, errors)
     if not this_content:
+        write_log()
         print("ERROR! No response received!")
         return ""
-    print("---------Generated Code-------------")
     if this_content[:4] == "```c" and this_content[-3:] == "```":
         result_code = this_content[4:-4].strip()
     else:
@@ -100,7 +110,6 @@ def error_fixing_mode(text=None):
             return ""
         else:
             result_code = (this_content[start_pos + 4:end_pos].strip())
-        print(result_code)
         print("-------------------------------------")
     return result_code
 
@@ -141,9 +150,7 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
         else:
             return_code = (this_content[start_pos + 4:end_pos]
                            .strip().replace("<linux/kunit.h>", "<kunit/test.h>"))
-        print(return_code)
         print("-------------------------------------")
-
     print("Writing code to file...")
     print("-------------------------------------")
 
