@@ -1,4 +1,4 @@
-<h1 align="center">GPT-KUnit-coder (Gemini Ver)</h1>
+<h1 align="center">GPT-KUnit-coder (Workers AI Ver)</h1>
 <p align="center">
     <a href="https://github.com/sahuidhsu/GPT-KUnit-coder/stargazers" style="text-decoration:none" >
         <img src="https://img.shields.io/github/stars/sahuidhsu/GPT-KUnit-coder.svg" alt="GitHub stars"/>
@@ -9,11 +9,11 @@
     <img src="https://img.shields.io/github/repo-size/sahuidhsu/GPT-KUnit-coder" alt="GitHub repo size"/>
     <img src="https://img.shields.io/github/last-commit/sahuidhsu/GPT-KUnit-coder" alt="GitHub last commit"/>
     <br>
-    <a href="https://ai.google.dev/" style="text-decoration:none" >
-        <img src="https://img.shields.io/badge/GEMINI-api-00A000?style=for-the-badge&logo=google" alt="OpenAI"/>
+    <a href="https://developers.cloudflare.com/workers-ai/" style="text-decoration:none" >
+        <img src="https://img.shields.io/badge/workers-ai-00A000?style=for-the-badge&logo=cloudflare" alt="OpenAI"/>
     </a>
 </p>
-<h3 align="center">This branch utilize the Gemini API via Vertex AI from Google to 
+<h3 align="center">This branch utilize various AIs via Workers AI from Cloudflare to 
 automatically create KUnit codes for Linux kernel files.</h3>
 <h4 align="center">System supported: Linux, macOS(not tested) </h4>
 
@@ -24,27 +24,20 @@ automatically create KUnit codes for Linux kernel files.</h3>
 bash commands(E.g. ```commandA && commandB 2> error.txt```) that might not work on Windows. If you would like to use it
 on Windows, feel free to modify those ```os.system()``` lines.
 > 
-> Up to now(07/02/2024) ***Google Vertex AI*** is in a beta version, it might be unstable and not work properly.
+> Up to now(14/02/2024) ***Workers AI*** is in a beta version, it might be unstable and not work properly.
 > 
-> The API is not free, you will need to have a Google Cloud account and have access to the API.
+> You will need to have a Cloudflare account and have access to the API.
 
 ## How to use
 ### Requirements
 - Python 3.6 or higher
 - Pip installed
-- Google Cloud CLI installed
-- Google Cloud account with access to the Vertex AI API
 ### Installation
 First, install dependencies:
 ```bash
 pip3 install -r requirements.txt
 ```
-Then, change the default configuration in [config.toml](config.toml) to your own. `LINUX_PATH` is necessary. \
-Finally, install [Google Cloud CLI](https://cloud.google.com/sdk/docs/install?hl=zh-cn) and login to your account by running the following command:
-```bash
-gcloud init
-gcloud auth application-default login
-```
+Then, change the default configuration in [config.toml](config.toml) to your own.
 
 ### Run(Auto Mode)
 Use the below command to run the main script in auto mode
@@ -63,7 +56,7 @@ between line 21 and 35, your command would be:
 ```bash
 python3 main.py drivers/nvme/host/trace.c 21 35
 ```
-There's a variable `max_debug_time` in line 242 of [main.py](main.py) that controls 
+There's a variable `max_debug_time` in line 257 of [main.py](main.py) that controls 
 the maximum times for self-debugging. It's set to 5 by default, you can change it to any number you want.
 
 ### Conversation Log

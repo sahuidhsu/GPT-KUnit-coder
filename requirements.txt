@@ -1,2 +1,2 @@
 toml
-google-cloud-aiplatform
+requests

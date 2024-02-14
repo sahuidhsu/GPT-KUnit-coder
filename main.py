@@ -13,8 +13,8 @@ import toml
 
 global end, config, linux_path, history
 
-model = "@cf/meta/llama-2-7b-chat-int8"  # llama-2-7b-chat-int8 model from Meta
-# model = "@hf/thebloke/deepseek-coder-6.7b-base-awq"  # deepseek-coder with base-awq model from Hugging Face
+# model = "@cf/meta/llama-2-7b-chat-int8"  # llama-2-7b-chat-int8 model from Meta
+model = "@hf/thebloke/deepseek-coder-6.7b-base-awq"  # deepseek-coder with base-awq model from Hugging Face
 # model = "@hf/thebloke/deepseek-coder-6.7b-instruct-awq"  # deepseek-coder with instruct-awq model from Hugging Face
 
 
@@ -28,7 +28,7 @@ def send_message(history, msg):
             "Content-Type": "application/json",
         },
         json={"messages": history},
-        timeout=60,
+        timeout=40,
     )
     print("Message received!")
     response_text = response.json()["result"]["response"]
@@ -38,8 +38,8 @@ def send_message(history, msg):
 
 def write_log():
     log = open("message_log.txt", "w")
-    for message in chat.history:
-        log.write(f'{"-" * 20}\n{message.role}\n{"-" * 20}\n{message.parts[0].text}\n')
+    for message in history:
+        log.write(f"{message['role']}\n{'-' * 20}\n {message['content']}\n{'-' * 20}\n")
     log.close()
 
 
@@ -63,38 +63,25 @@ def initialise():
         exit(1)
     account_id = config["CF_ACCOUNT_ID"]
     api_token = config["CF_API_KEY"]
-    history = [{"role": "system", "content": "You are a developer who is very familiar with the "
-                                             "KUnit tests in Linux kernel.\nUser will send you "
-                                             "pieces of source code. You should create some "
+    history = [{"role": "system", "content": "I am a developer who is very familiar with the "
+                                             "KUnit tests in Linux kernel.\nUser will send me "
+                                             "pieces of source code. I should create some "
                                              "executable corresponding KUnit test cases to "
-                                             "test out the code.User may also send you errors "
-                                             "that occur when running, you should fix the errors "
+                                             "test out the code. User may also send me errors "
+                                             "that occur when running, I should fix the errors "
                                              "and send back the fixed code.\nDo not include any "
-                                             "sentences other than the code itself in your reply. "
-                                             "You should implement all the codes, do not leave any "
-                                             "space for the user to add any code."}
+                                             "sentences other than the code itself in my reply. "
+                                             "I should implement all the codes and make sure the codes are "
+                                             "inside a ```c and ```, do not leave any space for the user "
+                                             "to add any code."}
                ]
     print("-------------------------------------")
 
 
 def error_fixing_mode(text=None):
     print("Entering error fixing mode...")
-    if text is None:
-        error_file = input("Please enter the path of the file containing the errors: ")
-        error_file = os.path.abspath(error_file)
-        print("Full file path: " + error_file)
-        if not os.path.exists(error_file) or not os.path.isfile(error_file):
-            print("ERROR! File not found!")
-            exit(1)
-        with open(error_file) as file:
-            errors = file.read()
-    else:
-        errors = text
-    prompt = (f"Please fix the following errors and return only the fixed code:\n```\n{errors}\n```\nMake sure you do "
-              f"not include any sentences other than the code itself in your reply. "
-              f"You should return the complete code file, make sure the code is inside a ```c block."
-              f"Do not leave any space for the user to add any code or add any comment that is not inside the code.")
-    this_content = send_message(prompt)
+    errors = text
+    this_content = send_message(history, errors)
     if not this_content:
         print("ERROR! No response received!")
         return ""
@@ -134,12 +121,9 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
         print("ERROR! Start line should be smaller than end line!")
         exit(1)
     code = "".join(code[start_line - 1:end_line])
-    prompt = (f"Please generate a KUnit test file for the following code:\n```c\n{code}\n```\nMake sure you "
-              f"do not include any sentences other than the code itself in your reply. You should implement all the "
-              f"codes, do not leave any space for the user to add any code or add any comment "
-              f"that is not inside the code. Make sure the code is inside a ```c block.")
-    this_content = send_message(prompt)
+    this_content = send_message(history, code)
     if not this_content:
+        write_log()
         exit(1)
     print("---------Generated Code-------------")
     if this_content[:4] == "```c" and this_content[-3:] == "```":
@@ -156,7 +140,7 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
             exit(1)
         else:
             return_code = (this_content[start_pos + 4:end_pos]
-                           .strip().replace("<linux/kunit/test.h>", "<kunit/test.h>"))
+                           .strip().replace("<linux/kunit.h>", "<kunit/test.h>"))
         print(return_code)
         print("-------------------------------------")
 
@@ -270,7 +254,7 @@ if __name__ == "__main__":
         except ValueError:
             print("ERROR! Invalid start line or end line!")
             exit(1)
-        max_debug_time = 10
+        max_debug_time = 5
         print(f"Auto mode enabled, max self-debugging times: {max_debug_time}")
         print("Author: LTY_CK_TS")
         print("Version: 0.1.0")
