@@ -73,6 +73,10 @@ def initialise():
         exit(1)
     account_id = config["CF_ACCOUNT_ID"]
     api_token = config["CF_API_KEY"]
+    template = ("```c\n#include <kunit/test.h>\nstatic void test(struct kunit *test)\n{KUNIT_EXPECT_EQ(test, 1, 1);}\n"
+                "static struct kunit_case test_cases[] = {\nKUNIT_CASE(test),\n{}\n"
+                "static struct kunit_suite test_suite = {\n.name = \"test_cases\",\n.test_cases = test_cases,\n};\n"
+                "kunit_test_suite(test_suite);\nMODULE_LICENSE(\"GPL\");\n```")
     history = [{"role": "system", "content": "I am a developer who is very familiar with the "
                                              "KUnit tests in Linux kernel.\nUser will send me "
                                              "pieces of source code. I should create an "
@@ -83,8 +87,9 @@ def initialise():
                                              "words other than the code itself in the reply. "
                                              "I should implement all the codes and make sure the codes are "
                                              "inside a ```c and ```, do not leave any space for the user "
-                                             "to add any code. The lib of KUnit is <kunit/test.h>"}
-               ]
+                                             "to add any code. The lib of KUnit is <kunit/test.h>.\nBelow is a "
+                                             f"template of KUnit test file:\n```c\n{template}\n```"
+                }]
     print("-------------------------------------")
 
 
