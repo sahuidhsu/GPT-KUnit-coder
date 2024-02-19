@@ -127,11 +127,12 @@ def initialise():
                                                                "executable corresponding KUnit test cases to "
                                                                "test out the code.User may also send you errors "
                                                                "that occur when running, you should fix the errors "
-                                                               "and send back the fixed code.\nDo not include any "
-                                                               "sentences other than the code itself in your reply. "
-                                                               "You should implement all the codes, do not leave any "
-                                                               "space for the user to add any code.\nYou must"
-                                                               "contain your code between \"```c\" and \"```\".",
+                                                               "and send back the fixed complete code.\nDo not include "
+                                                               "any sentences other than the code itself in your "
+                                                               "reply. You should implement all the codes, do not "
+                                                               "leave any space for the user to add any code.\nYou must"
+                                                               "contain your code between \"```c\" and \"```\"."
+                                                               "The lib of KUnit is <kunit/test.h>",
                                                   tools=[],
                                                   model="gpt-3.5-turbo")
         with open("config.toml", "w") as config_file:
