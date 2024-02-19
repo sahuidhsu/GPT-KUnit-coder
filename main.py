@@ -61,7 +61,7 @@ def error_fixing_mode(text=None):
         errors = text
     prompt = (f"Please fix the following errors and return only the fixed code:\n```\n{errors}\n```\nMake sure you do "
               f"not include any sentences other than the code itself in your reply. "
-              f"You should return the complete code file, make sure the code is inside a ```c block."
+              f"You should return the fixed complete code file, make sure the code is inside a ```c block."
               f"Do not leave any space for the user to add any code or add any comment that is not inside the code.")
     this_content = send_message(prompt)
     if not this_content:
@@ -106,7 +106,8 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
     prompt = (f"Please generate a KUnit test file for the following code:\n```c\n{code}\n```\nMake sure you "
               f"do not include any sentences other than the code itself in your reply. You should implement all the "
               f"codes, do not leave any space for the user to add any code or add any comment "
-              f"that is not inside the code. Make sure the code is inside a ```c block.")
+              f"that is not inside the code. Make sure the code is inside a ```c block. "
+              f"The lib of KUnit is <kunit/test.h>.")
     this_content = send_message(prompt)
     if not this_content:
         exit(1)
