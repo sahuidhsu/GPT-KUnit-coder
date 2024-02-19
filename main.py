@@ -83,7 +83,7 @@ def initialise():
                                              "words other than the code itself in the reply. "
                                              "I should implement all the codes and make sure the codes are "
                                              "inside a ```c and ```, do not leave any space for the user "
-                                             "to add any code."}
+                                             "to add any code. The lib of KUnit is <kunit/test.h>"}
                ]
     print("-------------------------------------")
 
