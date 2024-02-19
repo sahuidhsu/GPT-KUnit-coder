@@ -103,11 +103,15 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
         print("ERROR! Start line should be smaller than end line!")
         exit(1)
     code = "".join(code[start_line - 1:end_line])
+    template = ("```c\n#include <kunit/test.h>\nstatic void test(struct kunit *test)\n{KUNIT_EXPECT_EQ(test, 1, 1);}\n"
+                "static struct kunit_case test_cases[] = {\nKUNIT_CASE(test),\n{}\n"
+                "static struct kunit_suite test_suite = {\n.name = \"test_cases\",\n.test_cases = test_cases,\n};\n"
+                "kunit_test_suite(test_suite);\nMODULE_LICENSE(\"GPL\");\n```")
     prompt = (f"Please generate a KUnit test file for the following code:\n```c\n{code}\n```\nMake sure you "
               f"do not include any sentences other than the code itself in your reply. You should implement all the "
               f"codes, do not leave any space for the user to add any code or add any comment "
               f"that is not inside the code. Make sure the code is inside a ```c block. "
-              f"The lib of KUnit is <kunit/test.h>.")
+              f"The lib of KUnit is <kunit/test.h>.\nBelow is a template for the KUnit test file:\n{template}\n")
     this_content = send_message(prompt)
     if not this_content:
         exit(1)
