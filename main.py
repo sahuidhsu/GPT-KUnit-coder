@@ -90,7 +90,8 @@ def initialise():
 
 def error_fixing_mode(text=None):
     print("Entering error fixing mode...")
-    errors = text
+    errors = (f"Below is the result of running:\n```\n{text}\n```\nPlease fix the errors and send back the fixed code. "
+              f"Do not include any words other than the code within ```c and ``` in the reply.")
     this_content = send_message(history, errors)
     if not this_content:
         write_log()
