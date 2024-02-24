@@ -120,6 +120,11 @@ def initialise():
 
     if not config["ASSISTANT_ID"]:
         print("No existing assistant found. Now creating new assistant...")
+        template = (
+            "```c\n#include <kunit/test.h>\nstatic void test(struct kunit *test)\n{KUNIT_EXPECT_EQ(test, 1, 1);}\n"
+            "static struct kunit_case test_cases[] = {\nKUNIT_CASE(test),\n{}\n"
+            "static struct kunit_suite test_suite = {\n.name = \"test_cases\",\n.test_cases = test_cases,\n};\n"
+            "kunit_test_suite(test_suite);\nMODULE_LICENSE(\"GPL\");\n```")
         assistant = client.beta.assistants.create(name="KUnit developer-3.5-Turbo",
                                                   instructions="You are a developer who is very familiar with the "
                                                                "KUnit tests in Linux kernel.\nUser will send you "
@@ -132,7 +137,9 @@ def initialise():
                                                                "reply. You should implement all the codes, do not "
                                                                "leave any space for the user to add any code.\nYou must"
                                                                "contain your code between \"```c\" and \"```\"."
-                                                               "The lib of KUnit is <kunit/test.h>",
+                                                               "The lib of KUnit is <kunit/test.h>.\n"
+                                                               f"Below is a template for the KUnit "
+                                                               f"test case:\n{template}",
                                                   tools=[],
                                                   model="gpt-3.5-turbo")
         with open("config.toml", "w") as config_file:
