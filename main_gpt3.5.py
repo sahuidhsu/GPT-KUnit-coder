@@ -350,7 +350,9 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
                 with open("error.txt") as file:
                     result = file.read()
 
-                start_pos = result.find("ERROR")
+                error_pos = result.find("ERROR")
+                fail_pos = result.find("FAILED")
+                start_pos = error_pos if error_pos != -1 else fail_pos
             else:
                 exit(1)
         else:
