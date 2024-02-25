@@ -311,8 +311,9 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
     with open("error.txt") as file:
         result = file.read()
 
-    start_pos = result.find("ERROR")
-    if start_pos != -1 and result.find("unsatisfied dependencies") != -1:
+    error_pos = result.find("ERROR")
+    fail_pos = result.find("FAILED")
+    if (error_pos != -1 or fail_pos != -1) and result.find("unsatisfied dependencies") != -1:
         print("-------------------------------------")
         print("ERROR! Unsatisfied dependencies! Please check dependencies yourself!")
         print("The test file is located at: " + test_file)
@@ -320,6 +321,7 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
         exit(1)
 
     debug_times = 0
+    start_pos = error_pos if error_pos != -1 else fail_pos
     while start_pos != -1:
         if debug_times >= max_debug_time and auto_mode:
             print("-------------------------------------")
@@ -328,12 +330,12 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
             print("-------------------------------------")
             exit(0)
         print("-------------------------------------")
-        print(result[start_pos:])
+        print(result)
         print("-------------------------------------")
         entry = "y" if auto_mode else input("There's error, do you want to send errors to assistant? (Y/n) \n"
                                             "-------------------------------------")
         if entry.lower() not in ["n", "no", "dont", "not"]:
-            error = result[start_pos:]
+            error = result
             debug_times += 1
             print(f"Self-debugging times: {debug_times}")
             result_code = error_fixing_mode(text=error)
