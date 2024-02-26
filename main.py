@@ -14,8 +14,8 @@ import toml
 global end, config, linux_path, history
 
 # model = "@cf/meta/llama-2-7b-chat-int8"  # llama-2-7b-chat-int8 model from Meta
-model = "@hf/thebloke/codellama-7b-instruct-awq"  # codellama-7b-instruct-awq model from Meta via Hugging Face
-# model = "@hf/thebloke/deepseek-coder-6.7b-instruct-awq"  # deepseek-coder with instruct-awq model from Hugging Face
+# model = "@hf/thebloke/codellama-7b-instruct-awq"  # codellama-7b-instruct-awq model from Meta via Hugging Face
+model = "@hf/thebloke/deepseek-coder-6.7b-instruct-awq"  # deepseek-coder with instruct-awq model from Hugging Face
 
 
 def send_message(history, msg):
@@ -29,7 +29,6 @@ def send_message(history, msg):
             "Content-Type": "application/json",
         },
         json={"stream": True, "messages": history},
-        timeout=40,
         stream=True,
     )
     for line in response.iter_lines():
@@ -207,7 +206,9 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
     with open("error.txt") as file:
         result = file.read()
 
-    start_pos = result.find("ERROR")
+    error_pos = result.find("ERROR")
+    fail_pos = result.find("FAILED")
+    start_pos = error_pos if error_pos != -1 else fail_pos
     if start_pos != -1 and result.find("unsatisfied dependencies") != -1:
         print("-------------------------------------")
         print("ERROR! Unsatisfied dependencies! Please check dependencies yourself!")
@@ -242,7 +243,9 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
             with open("error.txt") as file:
                 result = file.read()
 
-            start_pos = result.find("ERROR")
+            error_pos = result.find("ERROR")
+            fail_pos = result.find("FAILED")
+            start_pos = error_pos if error_pos != -1 else fail_pos
         else:
             exit(1)
     write_log()
