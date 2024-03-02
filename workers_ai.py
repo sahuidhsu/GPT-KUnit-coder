@@ -14,8 +14,8 @@ import toml
 global end, config, linux_path, history
 
 # model = "@cf/meta/llama-2-7b-chat-int8"  # llama-2-7b-chat-int8 model from Meta
-# model = "@hf/thebloke/codellama-7b-instruct-awq"  # codellama-7b-instruct-awq model from Meta via Hugging Face
-model = "@hf/thebloke/deepseek-coder-6.7b-instruct-awq"  # deepseek-coder with instruct-awq model from Hugging Face
+model = "@hf/thebloke/codellama-7b-instruct-awq"  # codellama-7b-instruct-awq model from Meta via Hugging Face
+# model = "@hf/thebloke/deepseek-coder-6.7b-instruct-awq"  # deepseek-coder with instruct-awq model from Hugging Face
 
 
 def send_message(history, msg):
@@ -38,9 +38,16 @@ def send_message(history, msg):
                 print("\nMessage received!")
                 break
             else:
-                json_line = json.loads(decoded_line.split(': ')[1])
-                response_text += json_line["response"]
-                print(json_line["response"], end="")
+                try:
+                    json_line = json.loads(decoded_line.split(': ')[1])
+                    response_text += json_line["response"]
+                    print(json_line["response"], end="")
+                except json.JSONDecodeError:
+                    print(decoded_line)
+                    history.append({"role": "system", "content": decoded_line})
+                    write_log()
+                    print("ERROR! JSON decode error!")
+                    exit(1)
     history.append({"role": "system", "content": response_text})
     return response_text
 
