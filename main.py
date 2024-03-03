@@ -59,10 +59,8 @@ def error_fixing_mode(text=None):
             errors = file.read()
     else:
         errors = text
-    prompt = (f"Please fix the following errors and return only the fixed code:\n```\n{errors}\n```\nMake sure you do "
-              f"not include any sentences other than the code itself in your reply. "
-              f"You should return the fixed complete code file, make sure the code is inside a ```c block."
-              f"Do not leave any space for the user to add any code or add any comment that is not inside the code.")
+    prompt = (f"Please fix the following errors and return only the fixed code:\n```\n{errors}\n```\n"
+              f"You should return the fixed complete code file, make sure the code is inside a ```c block.")
     this_content = send_message(prompt)
     if not this_content:
         print("ERROR! No response received!")
@@ -178,6 +176,7 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
     print("-------------------------------------")
     print("Now compiling and running tests...")
     print("-------------------------------------")
+    os.system(f"echo '' > {os.getcwd()}/error.txt")
     os.system(f"cd {linux_path} && ./tools/testing/kunit/kunit.py run > {os.getcwd()}/error.txt 2>&1")
 
     # Self-debugging
@@ -185,7 +184,7 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
         result = file.read()
 
     error_pos = result.find("ERROR")
-    fail_pos = result.find("FAILED")
+    fail_pos = result.find("[FAILED]")
     start_pos = error_pos if error_pos != -1 else fail_pos
     if start_pos != -1 and result.find("unsatisfied dependencies") != -1:
         print("-------------------------------------")
@@ -216,13 +215,14 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
             with open(test_file, "w") as file:
                 file.write(result_code)
 
+            os.system(f"echo '' > {os.getcwd()}/error.txt")
             os.system(f"cd {linux_path} && ./tools/testing/kunit/kunit.py run > {os.getcwd()}/error.txt 2>&1")
 
             with open("error.txt") as file:
                 result = file.read()
 
             error_pos = result.find("ERROR")
-            fail_pos = result.find("FAILED")
+            fail_pos = result.find("[FAILED]")
             start_pos = error_pos if error_pos != -1 else fail_pos
         else:
             exit(1)
@@ -251,7 +251,7 @@ if __name__ == "__main__":
         max_debug_time = 10
         print(f"Auto mode enabled, max self-debugging times: {max_debug_time}")
         print("Author: LTY_CK_TS")
-        print("Version: 0.1.0")
+        print("Version: 0.2.0")
         print("-------------------------------------")
         test_generating_mode(abs_path=abs_path, start_l=start_line, end_l=end_line)
     elif len(sys.argv) > 1:
