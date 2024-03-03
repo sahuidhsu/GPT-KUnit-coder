@@ -14,8 +14,8 @@ import toml
 global end, config, linux_path, history
 
 # model = "@cf/meta/llama-2-7b-chat-int8"  # llama-2-7b-chat-int8 model from Meta
-model = "@hf/thebloke/codellama-7b-instruct-awq"  # codellama-7b-instruct-awq model from Meta via Hugging Face
-# model = "@hf/thebloke/deepseek-coder-6.7b-instruct-awq"  # deepseek-coder with instruct-awq model from Hugging Face
+# model = "@hf/thebloke/codellama-7b-instruct-awq"  # codellama-7b-instruct-awq model from Meta via Hugging Face
+model = "@hf/thebloke/deepseek-coder-6.7b-instruct-awq"  # deepseek-coder with instruct-awq model from Hugging Face
 
 
 def send_message(history, msg):
@@ -83,17 +83,7 @@ def initialise():
                 "static struct kunit_case test_cases[] = {\nKUNIT_CASE(test),\n{}\n"
                 "static struct kunit_suite test_suite = {\n.name = \"test_cases\",\n.test_cases = test_cases,\n};\n"
                 "kunit_test_suite(test_suite);\nMODULE_LICENSE(\"GPL\");")
-    history = [{"role": "system", "content": "I am a developer who is very familiar with the "
-                                             "KUnit tests in Linux kernel.\nUser will send me "
-                                             "pieces of source code. I should create an "
-                                             "executable corresponding complete KUnit test file to "
-                                             "test out the code. User may also send me errors "
-                                             "that occur when running, I should fix the errors "
-                                             "and send back the fixed code.\nDo not include any "
-                                             "words other than the code itself in the reply. "
-                                             "I should implement all the codes and make sure the codes are "
-                                             "inside a ```c and ```, do not leave any space for the user "
-                                             "to add any code. The lib of KUnit is <kunit/test.h>.\nBelow is a "
+    history = [{"role": "system", "content": "The lib of KUnit is <kunit/test.h>.\nBelow is a "
                                              f"template of KUnit test file:\n```c\n{template}\n```"
                 }]
     print("-------------------------------------")
@@ -101,7 +91,8 @@ def initialise():
 
 def error_fixing_mode(text=None):
     print("Entering error fixing mode...")
-    errors = (f"Below is the result of running:\n```\n{text[:2000]}\n```\nPlease fix the errors and send back the fixed code. "
+    errors = (f"Below is the result of running:\n```\n{text[:2000]}\n```\nPlease fix the errors and return only "
+              f"the fixed code. "
               f"Make sure your code is inside ```c and ```.")
     this_content = send_message(history, errors)
     if not this_content:
@@ -126,23 +117,16 @@ def error_fixing_mode(text=None):
     return result_code
 
 
-def test_generating_mode(abs_path=None, start_l=None, end_l=None):
+def test_generating_mode(func=None, help=None):
     print("Entering test generating mode...")
-    file_path = abs_path
-    print("Full file path: " + file_path)
-    if not os.path.exists(file_path) or not os.path.isfile(file_path):
-        print("ERROR! File not found!")
+    if not func:
+        print("ERROR! No function name provided!")
         exit(1)
-    with open(file_path) as file:
-        code = file.readlines()
-    start_line = start_l
-    end_line = end_l
     print("-------------------------------------")
-    if start_line > end_line:
-        print("ERROR! Start line should be smaller than end line!")
-        exit(1)
-    code = "".join(code[start_line - 1:end_line])
-    this_content = send_message(history, code)
+    prompt = "I want you to generate a KUnit test file for the function ```" + func + "``` in Linux kernel."
+    if help:
+        prompt += f"\n{help}"
+    this_content = send_message(history, prompt)
     if not this_content:
         write_log()
         exit(1)
@@ -245,6 +229,7 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
             print("-------------------------------------")
             with open(test_file, "w") as file:
                 file.write(result_code)
+
             os.system(f"echo '' > {os.getcwd()}/error.txt")
             os.system(f"cd {linux_path} && ./tools/testing/kunit/kunit.py run > {os.getcwd()}/error.txt 2>&1")
 
@@ -266,25 +251,18 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
 if __name__ == "__main__":
     print("-------------------------------------")
     print("GPT KUnit Test Generator Workers AI Ver")
-    if len(sys.argv) > 3:
+    if len(sys.argv) > 1:
         initialise()
-        abs_path = linux_path + "/" + sys.argv[1]
-        if not os.path.exists(abs_path) or not os.path.isfile(abs_path):
-            print("ERROR! File not found!")
-            exit(1)
         try:
-            start_line = int(sys.argv[2])
-            end_line = int(sys.argv[3])
+            func_name = sys.argv[1]
+            help_text = " ".join(sys.argv[2:]) if len(sys.argv) > 2 else None
         except ValueError:
-            print("ERROR! Invalid start line or end line!")
+            print("ERROR! Invalid input!")
             exit(1)
         max_debug_time = 5
         print(f"Auto mode enabled, max self-debugging times: {max_debug_time}")
         print("Author: LTY_CK_TS")
         print("Version: 0.1.0")
         print("-------------------------------------")
-        test_generating_mode(abs_path=abs_path, start_l=start_line, end_l=end_line)
-    elif len(sys.argv) > 1:
-        print("ERROR! You should specify the path as well as the start line and end line as argument!")
-        exit(1)
+        test_generating_mode(func=func_name, help=help_text)
     print("Exiting...")
