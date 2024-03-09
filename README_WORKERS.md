@@ -24,9 +24,10 @@ automatically create KUnit codes for Linux kernel files.</h3>
 bash commands(E.g. ```commandA && commandB 2> error.txt```) that might not work on Windows. If you would like to use it
 on Windows, feel free to modify those ```os.system()``` lines.
 > 
-> Up to now(14/02/2024) ***Workers AI*** is in a beta version, it might be unstable and not work properly.
+> Up to now(09/03/2024) ***Workers AI*** is in a beta version, it might be unstable and not work properly.
 > 
-> You will need to have a Cloudflare account and have access to the API.
+> You will need to have a Cloudflare account and have access to the API. The Workers AI API is free to use during the beta 
+> period, but it would be a paid service from 01/04/2024.
 
 ## How to use
 ### Requirements
@@ -42,21 +43,27 @@ Then, change the default configuration in [config.toml](config.toml) to your own
 ### Run(Auto Mode)
 Use the below command to run the main script in auto mode
 ```bash
-python3 main.py <path to file> <start line> <end line>
+python3 workers_ai.py <path to file> <start line> <end line>
 ```
 or
 ```bash
-./main.py <path to file> <start line> <end line>
+./workers_ai.py <path to file> <start line> <end line>
 ```
+
+> WorkersAI Ver also support black-box mode, you can use the below command to run the main script in black-box mode
+> ```bash
+> python3 workers_ai_blackbox.py <function name>
+> ```
+
 This will automatically generate the KUnit code for the file you,
 test it and self-debug. \
 Please use relative path to Linux kernel root instead of absolute path. \
 For example, if you want to generate KUnit code for `<linux_path>/drivers/nvme/host/trace.c` with function located 
 between line 21 and 35, your command would be:
 ```bash
-python3 main.py drivers/nvme/host/trace.c 21 35
+python3 workers_ai.py drivers/nvme/host/trace.c 21 35
 ```
-There's a variable `max_debug_time` in line 257 of [main.py](main.py) that controls 
+There's a variable `max_debug_time` in line 257 of [workers_ai.py](workers_ai.py) that controls 
 the maximum times for self-debugging. It's set to 5 by default, you can change it to any number you want.
 
 ### Conversation Log

@@ -25,7 +25,7 @@ automatically create KUnit codes for Linux kernel files.</h3>
 bash commands(E.g. ```commandA && commandB 2> error.txt```) that might not work on Windows. If you would like to use it
 on Windows, feel free to modify those ```os.system()``` lines.
 > 
-> Up to now(12/12/2023) ***Assistant API*** is in a beta version, it might be unstable and not work properly.
+> Up to now(09/03/2024) ***Assistant API*** is in a beta version, it might be unstable and not work properly.
 > 
 > The API is not free, you will need to have an OpenAI account and have access to the API.
 
@@ -46,11 +46,11 @@ It's okay to leave `ASSISTANT_ID` and `THREAD_ID` blank, but `OPENAI_API_KEY` an
 ### Run(Auto Mode)
 Use the below command to run the main script in auto mode
 ```bash
-python3 main.py <path to file> <start line> <end line>
+python3 gpt_4.py <path to file> <start line> <end line>
 ```
 or
 ```bash
-./main.py <path to file> <start line> <end line>
+./gpt_4.py <path to file> <start line> <end line>
 ```
 This will automatically generate the KUnit code for the file you,
 test it and self-debug. \
@@ -58,19 +58,19 @@ Please use relative path to Linux kernel root instead of absolute path. \
 For example, if you want to generate KUnit code for `<linux_path>/drivers/nvme/host/trace.c` with function located 
 between line 21 and 35, your command would be:
 ```bash
-python3 main.py drivers/nvme/host/trace.c 21 35
+python3 gpt_4.py drivers/nvme/host/trace.c 21 35
 ```
-There's a variable `max_debug_time` in line 357 of [main.py](main.py) that controls 
+There's a variable `max_debug_time` in line 357 of [gpt_4.py](gpt_4.py) that controls 
 the maximum times for self-debugging. It's set to 5 by default, you can change it to any number you want.
 
 ### Run(Manual Mode)
 Use the below command to run the main script by manually choosing options
 ```bash
-python3 main.py
+python3 gpt_4.py
 ```
 or
 ```bash
-./main.py
+./gpt_4.py
 ```
 Then you will see a menu containing some options:
 #### Test generating mode
