@@ -1,8 +1,75 @@
 from gpt_4 import send_message as gpt_4_send_message
-from workers_ai_blackbox import send_message as workers_ai_send_message
+
 import toml
 import openai
 import sys
+import requests
+import json
+import os
+
+
+# model = "@hf/thebloke/codellama-7b-instruct-awq"  # codellama-7b-instruct-awq model from Meta via Hugging Face
+model = "@hf/thebloke/deepseek-coder-6.7b-instruct-awq"  # deepseek-coder with instruct-awq model from Hugging Face
+max_debug_time = 5  # Max self-debugging times
+
+
+def workers_ai_send_message(history, msg):
+    print("Message sent! Now waiting for reply...")
+    history.append({"role": "user", "content": msg})
+    response_text = ""
+    response = requests.post(
+        f"https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/{model}",
+        headers={
+            "Authorization": f"Bearer {api_token}",
+            "Content-Type": "application/json",
+        },
+        json={"stream": True, "messages": history},
+        stream=True,
+    )
+    for line in response.iter_lines():
+        if line:
+            decoded_line = line.decode('utf-8')
+            if decoded_line == 'data: [DONE]':
+                print("\nMessage received!")
+                break
+            else:
+                try:
+                    json_line = json.loads(decoded_line.split(': ')[1])
+                    response_text += json_line["response"]
+                    print(json_line["response"], end="")
+                except BaseException:
+                    print(decoded_line)
+                    history.append({"role": "system", "content": decoded_line})
+                    print("ERROR! JSON decode error!")
+                    exit(1)
+    history.append({"role": "system", "content": response_text})
+    return response_text
+
+
+def error_fixing_mode(errors):
+    received_content = gpt_4_send_message(client, thread, assistant, errors)
+    if not received_content:
+        print("ERROR! No response received!")
+        return ""
+    result_code = ""
+    print("---------Generated Code-------------")
+    for this_content in received_content:
+        if this_content[:4] == "```c" and this_content[-3:] == "```":
+            result_code = this_content[4:-4].strip()
+        else:
+            start_pos = this_content.find("```c")
+            end_pos = this_content.rfind("```")
+            if start_pos == -1 or end_pos == -1:
+                print(this_content)
+                print("-------------------------------------")
+                print("ERROR! No code found in this response!")
+                print("-------------------------------------")
+                return ""
+            else:
+                result_code = (this_content[start_pos + 4:end_pos].strip())
+        print(result_code)
+        print("-------------------------------------")
+    return result_code
 
 
 if len(sys.argv) < 2:
@@ -26,7 +93,11 @@ account_id = config["CF_ACCOUNT_ID"]
 api_token = config["CF_API_KEY"]
 if not config["OPENAI_API_KEY"]:
     print("ERROR! Please set your OPENAI_API_KEY in config.toml")
-    exit()
+    exit(1)
+if not config["LINUX_PATH"]:
+    print("ERROR! Please set your LINUX_PATH in config.toml")
+    exit(1)
+linux_path = os.path.abspath(config["LINUX_PATH"])
 
 client = openai.Client(api_key=config["OPENAI_API_KEY"])
 
@@ -70,9 +141,150 @@ else:
         toml.dump(config, config_file)
 
 history = []
-prompt = (
-        f"I want you to generate a test file in pseudocode for the function ```{func_name}``` in Linux kernel."
-        "Do not include any sentences other than the code itself in your reply. You should implement all the codes. "
-        "Make sure to contain your code between \"```c\" and \"```\".")
+prompt = (f"I want you to generate some unit tests in pseudocode for the function ```{func_name}``` in Linux kernel. "
+          "Only return the unit tests, do not return the function itself. "
+          "You should implement all the codes. Make sure to contain the tests between \"```c\" and \"```\".")
 if help_text:
     prompt += f"\n{help_text}"
+pseudo_code = workers_ai_send_message(history, prompt)
+
+if pseudo_code[:4] == "```c" and pseudo_code[-3:] == "```":
+    pseudo_code = pseudo_code[4:-4].strip()
+else:
+    start_pos = pseudo_code.find("```c")
+    end_pos = pseudo_code.rfind("```")
+    if start_pos == -1 or end_pos == -1:
+        print(pseudo_code)
+        print("-------------------------------------")
+        print("ERROR! No code found in this response!")
+        print("-------------------------------------")
+        exit(1)
+    else:
+        pseudo_code = (pseudo_code[start_pos + 4:end_pos].strip())
+
+received_content = gpt_4_send_message(client, thread, assistant, pseudo_code)
+if not received_content:
+    exit(1)
+code_found = False
+return_code = ""
+print("---------Generated Code-------------")
+for this_content in received_content:
+    if this_content[:4] == "```c" and this_content[-3:] == "```":
+        return_code = this_content[4:-4].strip()
+        code_found = True
+    else:
+        start_pos = this_content.find("```c")
+        end_pos = this_content.rfind("```")
+        if start_pos == -1 or end_pos == -1:
+            print(this_content)
+            print("-------------------------------------")
+            print("ERROR! No code found in this response!")
+            print("-------------------------------------")
+            continue
+        else:
+            return_code = (this_content[start_pos + 4:end_pos]
+                           .strip().replace("<linux/kunit/test.h>", "<kunit/test.h>"))
+            code_found = True
+    print(return_code)
+    print("-------------------------------------")
+if not code_found:
+    print("ERROR! No code found in all the responses! Exiting...")
+    exit(1)
+
+print("Writing code to file...")
+print("-------------------------------------")
+
+test_file = linux_path + "/drivers/misc/tmp_kunit_test.c"
+with open(test_file, "w") as file:
+    file.write(return_code)
+
+with open(linux_path + "/drivers/misc/Makefile") as file:
+    makefile = file.readlines()
+
+if "obj-$(CONFIG_TMP_KUNIT_TEST) += tmp_kunit_test.o\n" in makefile:
+    print("Test file already exists in Makefile!")
+else:
+    print("Adding test file to Makefile...")
+    makefile.append("\nobj-$(CONFIG_TMP_KUNIT_TEST) += tmp_kunit_test.o\n")
+    with open(linux_path + "/drivers/misc/Makefile", "w") as file:
+        file.writelines(makefile)
+
+with open(linux_path + "/drivers/misc/Kconfig") as file:
+    kconfig = file.readlines()
+if "config TMP_KUNIT_TEST\n" in kconfig:
+    print("TMP_KUNIT_TEST already exists in Kconfig!")
+else:
+    print("Adding TMP_KUNIT_TEST to Kconfig...")
+    kconfig.append("\nconfig TMP_KUNIT_TEST\n")
+    kconfig.append("\ttristate \"tmp_kunit_test\" if !KUNIT_ALL_TESTS\n")
+    kconfig.append("\tdepends on KUNIT\n")
+    kconfig.append("\tdefault KUNIT_ALL_TESTS\n")
+    with open(linux_path + "/drivers/misc/Kconfig", "w") as file:
+        file.writelines(kconfig)
+
+with open(linux_path + "/.kunit/.kunitconfig") as file:
+    kunitconfig = file.readlines()
+if "CONFIG_TMP_KUNIT_TEST=y\n" in kunitconfig:
+    print("CONFIG_TMP_KUNIT_TEST already exists in .kunitconfig!")
+else:
+    print("Adding CONFIG_TMP_KUNIT_TEST to .kunitconfig...")
+    kunitconfig.append("\nCONFIG_TMP_KUNIT_TEST=y\n")
+    with open(linux_path + "/.kunit/.kunitconfig", "w") as file:
+        file.writelines(kunitconfig)
+
+print("-------------------------------------")
+print("Now compiling and running tests...")
+print("-------------------------------------")
+os.system(f"echo '' > {os.getcwd()}/error.txt")
+os.system(f"cd {linux_path} && ./tools/testing/kunit/kunit.py run > {os.getcwd()}/error.txt 2>&1")
+
+# Self-debugging
+with open("error.txt") as file:
+    result = file.read()
+
+error_pos = result.find("ERROR")
+fail_pos = result.find("[FAILED]")
+if (error_pos != -1 or fail_pos != -1) and result.find("unsatisfied dependencies") != -1:
+    print("-------------------------------------")
+    print("ERROR! Unsatisfied dependencies! Please check dependencies yourself!")
+    print("The test file is located at: " + test_file)
+    print("-------------------------------------")
+    exit(1)
+
+debug_times = 0
+start_pos = error_pos if error_pos != -1 else fail_pos
+while start_pos != -1:
+    if debug_times >= max_debug_time:
+        print("-------------------------------------")
+        print("Max self-debugging times exceeded! Exiting...")
+        print("The uncompleted test file is located at: " + test_file)
+        print("-------------------------------------")
+        exit(0)
+    print("-------------------------------------")
+    print(result)
+    print("-------------------------------------")
+    error = result
+    debug_times += 1
+    print(f"Self-debugging times: {debug_times}")
+    result_code = error_fixing_mode(errors=error)
+    if result_code != "":
+        print("Now running fixed code...")
+        print("-------------------------------------")
+        with open(test_file, "w") as file:
+            file.write(result_code)
+
+        os.system(f"echo '' > {os.getcwd()}/error.txt")
+        os.system(f"cd {linux_path} && ./tools/testing/kunit/kunit.py run > {os.getcwd()}/error.txt 2>&1")
+
+        with open("error.txt") as file:
+            result = file.read()
+
+        error_pos = result.find("ERROR")
+        fail_pos = result.find("[FAILED]")
+        start_pos = error_pos if error_pos != -1 else fail_pos
+    else:
+        exit(1)
+print("-------------------------------------")
+print("All tests passed! Congratulations!")
+print("The test file is located at: " + test_file)
+print("-------------------------------------")
