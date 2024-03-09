@@ -6,7 +6,6 @@
 ###
 import os
 import sys
-import time
 
 from vertexai.preview.generative_models import GenerativeModel
 import toml
