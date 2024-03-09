@@ -1,3 +1,6 @@
+OPENAI_API_KEY = ""
+ASSISTANT_ID = ""
+THREAD_ID = ""
 LINUX_PATH = "/home/sahuidhsu/linux"
 CF_API_KEY = ""
 CF_ACCOUNT_ID = ""
