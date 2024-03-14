@@ -63,7 +63,7 @@ between line 21 and 35, your command would be:
 ```bash
 python3 gemini.py drivers/nvme/host/trace.c 21 35
 ```
-There's a variable `max_debug_time` in line 242 of [gemini.py](gemini.py) that controls 
+There's a variable `max_debug_time` in line 250 of [gemini.py](gemini.py) that controls 
 the maximum times for self-debugging. It's set to 5 by default, you can change it to any number you want.
 
 ### Conversation Log

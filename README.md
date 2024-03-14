@@ -60,7 +60,7 @@ between line 21 and 35, your command would be:
 ```bash
 python3 gpt_4.py drivers/nvme/host/trace.c 21 35
 ```
-There's a variable `max_debug_time` in line 357 of [gpt_4.py](gpt_4.py) that controls 
+There's a variable `max_debug_time` in line 377 of [gpt_4.py](gpt_4.py) that controls 
 the maximum times for self-debugging. It's set to 5 by default, you can change it to any number you want.
 
 ### Run(Manual Mode)

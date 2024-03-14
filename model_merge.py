@@ -1,3 +1,5 @@
+# This is a beta version of merging two models.
+
 from gpt_4 import send_message as gpt_4_send_message
 
 import toml
@@ -91,7 +93,7 @@ def error_fixing_mode(errors):
 
 
 if len(sys.argv) < 2:
-    print("Usage: python3 two-phase.py <function name>")
+    print("Usage: python3 model_merge.py <function name>")
     exit(1)
 try:
     func_name = sys.argv[1]
