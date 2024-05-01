@@ -361,6 +361,7 @@ def test_generating_mode(abs_path=None, start_l=None, end_l=None):
 if __name__ == "__main__":
     print("-------------------------------------")
     print("GPT KUnit Test Generator")
+    max_debug_time = 5
     if len(sys.argv) > 3:
         initialise()
         abs_path = linux_path + "/" + sys.argv[1]
@@ -374,7 +375,6 @@ if __name__ == "__main__":
             print("ERROR! Invalid start line or end line!")
             exit(1)
         auto_mode = True
-        max_debug_time = 5
         print(f"Auto mode enabled, max self-debugging times: {max_debug_time}")
         print("Author: LTY_CK_TS")
         print("Version: 0.2.1")
